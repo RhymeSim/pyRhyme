@@ -1,0 +1,28 @@
+# VisIt Wrapper
+
+## Installation
+[Here](https://wci.llnl.gov/simulation/computer-codes/visit/downloads) you can
+find instructions to install VisIt on your computer.
+
+## Usage
+Before importing this module, make sure that you have VisIt Python package path
+in your `PYTHONPATH`, if not, find your VisIt Python package path and add it
+to your `PYTHONPATH` as shown in the following,
+
+```shell
+$ export PYTHONPATH=/path/to/visit/version/arch/lib/site-packages:$PYTHONPATH
+```
+
+**Note** VisIt Python package is only compatible with Python 2.
+
+Import `py_rhyme.visit` and enjoy the power of VisIt,
+
+```python
+>>> from py_rhyme.visit import VisitAPI as Vis
+>>> v = Vis(interactive=True) # False if you don't wish to open VisIt viewer
+>>> v.open('/path/output_000.h5') # For a database use: /path/output_*
+>>> v.pseudocolor('rho')
+>>> v.slice(origin_type='Percent', val=50, axis_type='ZAxis')
+>>> v.draw_plots()
+>>> v.close()
+```
