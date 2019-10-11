@@ -1,4 +1,4 @@
-import re, time
+import time, copy
 from .pseudocolor_helper import pseudocolor_attr
 from .slice_helper import slice_attr
 from .draw_plots_helper import draw_plots_attr
@@ -16,6 +16,7 @@ class VisitAPI:
     VisIt python package to generate different plots based on Rhyme chombo outpus
     """
 
+
     def __init__(self, visit_lib_dir=None, interactive=True):
         """
         Initializing a VisitAPI object
@@ -23,12 +24,19 @@ class VisitAPI:
         Parameter
         visit_lib_dir: Path to VisIt python packages directory
         interactive: If False, VisIt viewer will be shut down
+
+        TODO
+        Add expressions
+        GetCallbackNames()
         """
 
         if not interactive: visit.AddArgument("-nowin")
 
         if visit.Launch() != 1:
             raise RuntimeError('Unable to launch VisIt.')
+
+        visit.SetTreatAllDBsAsTimeVarying(1)
+        visit.SetQueryOutputToObject()
 
 
     def open(self, path):
@@ -47,6 +55,28 @@ class VisitAPI:
             raise RuntimeWarning('Unable to open database:', path)
 
 
+    def active_window(self):
+        ga = visit.GetGlobalAttributes()
+        return ga.windows[ga.activeWindow]
+
+
+    def windows(self):
+        return visit.GetGlobalAttributes().windows
+
+
+    def cycle(self, step):
+        """
+        Changing the active time step (in a database)
+        """
+        n_steps = visit.GetDatabaseNStates()
+
+        if step < 0 or step > n_steps:
+            raise RuntimeWarning('Out of range!', step)
+
+        if visit.SetTimeSliderState(step) != 1:
+            raise RuntimeWarning('Unable to change database state to:', step)
+
+
     def pseudocolor(self, var, scaling='log', zmin=None, zmax=None,
         ct='RdYlBu', invert_ct=0):
         """
@@ -57,6 +87,11 @@ class VisitAPI:
         scaling: log, linear
         ct: Name of color table to be used
         invert_ct: If 1, colors will be inverted
+
+        TODO
+        if var is all, plot all variables:
+            SetActivePlots((0,1,2))
+        GetNumPlots()
         """
         if visit.AddPlot( 'Pseudocolor', var, 1, 1 ) != 1:
             raise RuntimeWarning('Unable to add Pseudocolor plot.')
@@ -71,6 +106,7 @@ class VisitAPI:
 
         ct_orig = p.colorTableName
         invrt_orig = p.invertColorTable
+        scaling_orig = p.scaling
 
         for ct in visit.ColorTableNames():
             for invrt in (0, 1):
@@ -78,13 +114,22 @@ class VisitAPI:
 
                 p.colorTableName = ct
                 p.invertColorTable = invrt
+                p.scaling = scaling_orig
                 visit.SetPlotOptions(p)
 
                 time.sleep(sleep)
 
         p.colorTableName = ct_orig
         p.invertColorTable = invrt_orig
+        p.scaling = scaling_orig
         visit.SetPlotOptions(p)
+
+
+    def change_variable(self, var):
+        if var in self.variables:
+            visit.ChangeActivePlotsVar(var)
+        else:
+            raise RuntimeWarning('Unknown variable:', var)
 
 
 
@@ -109,6 +154,8 @@ class VisitAPI:
         sa = slice_attr(origin_type, val, axis_type)
         visit.SetOperatorOptions(sa)
 
+        return sa
+
 
     def draw_plots(self, xtitle='X', xunit='Mpc', xscale='linear', xmin=None, xmax=None,
         ytitle='Y', yunit='Mpc', yscale='linear', ymin=None, ymax=None,
@@ -127,6 +174,8 @@ class VisitAPI:
 
         visit.SetAnnotationAttributes(aa)
         visit.SetView2D(v2da)
+
+        return aa, v2da
 
 
     def line(self, p1=(0.75, 0.75), p2=(0.75, 0.75), width=1,
@@ -166,12 +215,48 @@ class VisitAPI:
         """
         queries = visit.Queries()
 
-        visit.SetQueryOutputToObject()
-
         if q in queries:
             return visit.Query(q)
         else:
             raise RuntimeWarning('Invalid query!')
+
+
+    def query_over_time(self, q='', range_scale='log', domain_scale='linear'):
+        queries = visit.QueriesOverTime()
+
+        if q in queries:
+            aw = self.active_window()
+
+            if visit.QueryOverTime(q) != 1:
+                raise RuntimeWarning('Unable to run the query_over_time:', q)
+
+            window_id = visit.GetQueryOverTimeAttributes().windowId
+            visit.SetActiveWindow(window_id)
+
+            pi = visit.GetPlotInformation()
+            pi['windowId'] = window_id
+
+            visit.SetActiveWindow(aw)
+            return pi
+        else:
+            raise RuntimeWarning('Invalid query_over_time!')
+
+
+    def minimum_over_time(self):
+        """
+        TODO:
+        ViewCurveAttributes
+        SetViewCurve
+        """
+        cmin = self.query_over_time('Min')
+        cmin['min'] = min(cmin['Curve'][1::2])
+        return cmin
+
+
+    def maximum_over_time(self):
+        cmax = self.query_over_time('Max')
+        cmax['max'] = max(cmax['Curve'][1::2])
+        return cmax
 
 
     def close(self):

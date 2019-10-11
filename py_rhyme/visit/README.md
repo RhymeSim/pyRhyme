@@ -13,6 +13,15 @@ to your `PYTHONPATH` as shown in the following,
 $ export PYTHONPATH=/path/to/visit/version/arch/lib/site-packages:$PYTHONPATH
 ```
 
+You might also need to set other env variables:
+
+```shell
+$ export PATH=/path/to/visit/bin:$PATH
+$ export C_LIBRARY_PATH=/path/to/visit/version/arch/lib:$C_LIBRARY_PATH
+$ export LD_LIBRARY_PATH=/path/to/visit/version/arch/lib:$LD_LIBRARY_PATH
+$ export C_INCLUDE_PATH=/path/to/visit/version/arch/include:$C_INCLUDE_PATH
+```
+
 **Note** VisIt Python package is only compatible with Python 2.
 
 Import `py_rhyme.visit` and enjoy the power of VisIt,
