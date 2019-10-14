@@ -1,6 +1,9 @@
-import time, copy
-from .pseudocolor_helper import pseudocolor_attr
-from .slice_helper import slice_attr
+import time, copy, os
+from .pseudocolor_plot_helper import pseudocolor_plot_attr, is_pseudocolor_plot, \
+    set_pseudocolor_plot_colortable, set_pseudocolor_plot_variable
+from .curve_plot_helper import curve_plot_attr, is_curve_plot, \
+    set_curve_plot_variable
+from .slice_operator_helper import slice_operator_attr, is_slice_operator
 from .draw_plots_helper import draw_plots_attr
 from .line_helper import new_line
 
@@ -10,11 +13,17 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-
 class VisitAPI:
     """
     VisIt python package to generate different plots based on Rhyme chombo outpus
     """
+
+    METADATA = {
+        'variables': [],
+        'windows': [],
+    }
+
+    SCALING_TYPES = { 'log': 1, 'linear': 2 }
 
 
     def __init__(self, visit_lib_dir=None, interactive=True):
@@ -38,6 +47,10 @@ class VisitAPI:
         visit.SetTreatAllDBsAsTimeVarying(1)
         visit.SetQueryOutputToObject()
 
+        self.metadata = self.METADATA
+        self.metadata['windows'].append(self._new_window_object())
+        self.metadata['variables'] = ['rho', 'rho_u', 'rho_v', 'rho_w', 'e_tot']
+
 
     def open(self, path):
         """
@@ -54,27 +67,34 @@ class VisitAPI:
         if visit.OpenDatabase(ds, 0, 'Chombo') != 1:
             raise RuntimeWarning('Unable to open database:', path)
 
+        wid = self.active_window_id()
 
-    def active_window(self):
-        ga = visit.GetGlobalAttributes()
-        return ga.windows[ga.activeWindow]
+        self.metadata['windows'][wid]['database'] = ds
+        self.metadata['windows'][wid]['cycle'] = 0
+        self.metadata['windows'][wid]['id'] = os.path.basename(
+            os.path.splitext(path)[0].replace('*', 'database').replace('.', '_')
+        )
 
 
-    def windows(self):
-        return visit.GetGlobalAttributes().windows
-
-
-    def cycle(self, step):
+    def cycle(self, c):
         """
         Changing the active time step (in a database)
         """
-        n_steps = visit.GetDatabaseNStates()
+        wid = self.active_window_id()
 
-        if step < 0 or step > n_steps:
-            raise RuntimeWarning('Out of range!', step)
+        if not self.metadata['windows'][wid]['drawn']:
+            raise RuntimeWarning('Window is not drawn!')
+            return
 
-        if visit.SetTimeSliderState(step) != 1:
-            raise RuntimeWarning('Unable to change database state to:', step)
+        n_cycles = visit.GetDatabaseNStates()
+
+        if not 0 <= c < n_cycles:
+            raise RuntimeWarning('Out of range of cycles!', c)
+
+        if visit.SetTimeSliderState(c) != 1:
+            raise RuntimeWarning('Unable to change database state to:', c)
+
+        self.metadata['windows'][wid]['cycle'] = c
 
 
     def pseudocolor(self, var, scaling='log', zmin=None, zmax=None,
@@ -96,8 +116,13 @@ class VisitAPI:
         if visit.AddPlot( 'Pseudocolor', var, 1, 1 ) != 1:
             raise RuntimeWarning('Unable to add Pseudocolor plot.')
 
-        psa = pseudocolor_attr(scaling, zmin, zmax, ct, invert_ct)
+        psa, pso = pseudocolor_plot_attr(scaling, zmin, zmax, ct, invert_ct)
         visit.SetPlotOptions(psa)
+
+        wid = self.active_window_id()
+        self.metadata['windows'][wid]['plots'].append(pso)
+        set_pseudocolor_plot_variable(
+            self.metadata['windows'][wid]['plots'][-1], var)
 
 
     def pseudocolor_try_colortables(self, sleep=1.5):
@@ -125,12 +150,50 @@ class VisitAPI:
         visit.SetPlotOptions(p)
 
 
-    def change_variable(self, var):
-        if var in self.variables:
-            visit.ChangeActivePlotsVar(var)
-        else:
-            raise RuntimeWarning('Unknown variable:', var)
+    def pseudocolor_colortable(self, ct):
+        """Changing a pseudocolor plot color table"""
+        wid = self.active_window_id()
+        pid = pseudocolor_plotid(wid)
 
+        if pid < 0:
+            raise RuntimeError('No pseudocolor found in this window!')
+
+        if ct not in visit.ColorTableNames():
+            raise RuntimeError('Color table not found!')
+
+        p = visit.PseudocolorAttributes()
+        p.colorTableName = ct
+        visit.SetPlotOptions(p)
+
+        set_pseudocolor_plot_colortable(
+            self.metadata['windows'][wid]['plots'][pid], ct)
+
+
+    def pseudocolor_plotid(wid):
+        for i, plot in enumerate(self.metadata['windows'][wid]['plots']):
+            if is_pseudocolor_plot(plot):
+                return i
+
+        return -1
+
+
+    def plot_variable(self, var):
+        wid = self.active_window_id()
+
+        if len(self.metadata['windows'][wid]['plots']) < 1:
+            raise RuntimeError('No plots found in this window!')
+
+        if var not in self.metadata['variables']:
+            raise RuntimeError('No variable name', var)
+
+        if visit.ChangeActivePlotsVar(var) == 1:
+            for plot in self.metadata['windows'][wid]['plots']:
+                if is_pseudocolor_plot(plot):
+                    set_pseudocolor_plot_variable(plot, var)
+                elif is_curve_plot(plot):
+                    set_curve_plot_variable(plot, var)
+            else:
+                raise RuntimeError('Unable to change plots variable!')
 
 
     def slice(self, origin_type='Percent', val=50, axis_type='ZAxis', all=1):
@@ -151,13 +214,14 @@ class VisitAPI:
         if visit.AddOperator('Slice', all) != 1:
             raise RuntimeWarning('Unable to add Slice operator')
 
-        sa = slice_attr(origin_type, val, axis_type)
+        sa, so = slice_operator_attr(origin_type, val, axis_type)
         visit.SetOperatorOptions(sa)
 
-        return sa
+        wid = self.active_window_id()
+        self.metadata['windows'][wid]['operators'].append(so)
 
 
-    def draw_plots(self, xtitle='X', xunit='Mpc', xscale='linear', xmin=None, xmax=None,
+    def draw(self, xtitle='X', xunit='Mpc', xscale='linear', xmin=None, xmax=None,
         ytitle='Y', yunit='Mpc', yscale='linear', ymin=None, ymax=None,
         color=(0, 0, 0, 255), bg=(255, 255, 255, 255), fg=(0, 0, 0, 255)):
         """
@@ -165,7 +229,6 @@ class VisitAPI:
         """
         if visit.DrawPlots() != 1:
             raise RuntimeWarning('Unable to draw plots.')
-
 
         se = self.query('SpatialExtents')['extents']
 
@@ -175,7 +238,8 @@ class VisitAPI:
         visit.SetAnnotationAttributes(aa)
         visit.SetView2D(v2da)
 
-        return aa, v2da
+        wid = self.active_window_id()
+        self.metadata['windows'][wid]['drawn'] = True
 
 
     def line(self, p1=(0.75, 0.75), p2=(0.75, 0.75), width=1,
@@ -196,8 +260,6 @@ class VisitAPI:
         """
 
         ao = new_line(p1, p2, width, color, opacity, begin_arrow, end_arrow)
-
-        return ao
 
 
     def invert(self):
@@ -259,10 +321,34 @@ class VisitAPI:
         return cmax
 
 
+    def _new_window_object(self):
+        return {
+            'database': '',
+            'cycle': 0,
+            'id': '',
+            'plots': [],
+            'operators': [],
+            'drawn': False
+        }
+
+
+    def active_window_id(self):
+        ga = visit.GetGlobalAttributes()
+        return ga.activeWindow
+
+
+    def active_window(self):
+        ga = visit.GetGlobalAttributes()
+        return ga.windows[ga.activeWindow]
+
+
+    def windows(self):
+        return visit.GetGlobalAttributes().windows
+
+
     def close(self):
         """
         Closing VisIt windwo
         """
-
         if visit.Close() != 1:
             raise RuntimeError('Unable to close VisIt.')

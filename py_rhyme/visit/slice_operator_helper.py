@@ -4,7 +4,7 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-def slice_attr(ot, v, at):
+def slice_operator_attr(ot, v, at):
     """
     Parameter
     ot: OriginType
@@ -26,4 +26,25 @@ def slice_attr(ot, v, at):
     else:
         raise RuntimeWarning(at, 'is not a valid axis type.')
 
-    return sa
+    so = _new_slice_operator_object()
+    so['origin_type'] = ot
+    so['value'] = v
+    so['axis_type'] = at
+
+    return sa, so
+
+
+def _new_slice_operator_object():
+    return {
+        'type': 'slice',
+        'origin_type': '',
+        'value': 0,
+        'axis_type': '',
+    }
+
+
+def is_slice_operator(op_obj):
+    if 'type' in op_obj and op_obj['type'] is 'slice':
+        return True
+    else:
+        return False
