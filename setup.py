@@ -36,5 +36,6 @@ setup(
     cmdclass={
         'chombo': CreateTestChombo,
     },
-    zip_safe=False
+    zip_safe=False,
+    scripts=['scripts/rhyme_slice'],
 )

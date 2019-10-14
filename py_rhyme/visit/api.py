@@ -13,13 +13,12 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-class VisitAPI:
+class VisItAPI:
     """
     VisIt python package to generate different plots based on Rhyme chombo outpus
     """
 
     METADATA = {
-        'variables': [],
         'windows': [],
     }
 
@@ -49,7 +48,6 @@ class VisitAPI:
 
         self.metadata = self.METADATA
         self.metadata['windows'].append(self._new_window_object())
-        self.metadata['variables'] = ['rho', 'rho_u', 'rho_v', 'rho_w', 'e_tot']
 
 
     def open(self, path):
@@ -75,14 +73,17 @@ class VisitAPI:
             os.path.splitext(path)[0].replace('*', 'database').replace('.', '_')
         )
 
+        md = visit.GetMetaData(ds)
+        for i in range(md.GetNumScalars()):
+            self.metadata['windows'][wid]['variables'].append(
+                md.GetScalars(i).name)
+
 
     def cycle(self, c):
         """
         Changing the active time step (in a database)
         """
-        wid = self.active_window_id()
-
-        if not self.metadata['windows'][wid]['drawn']:
+        if not self.window_is_drawn():
             raise RuntimeWarning('Window is not drawn!')
             return
 
@@ -127,9 +128,13 @@ class VisitAPI:
 
     def pseudocolor_try_colortables(self, sleep=1.5):
         """Trying all available colorTables on an **already drawn** plot"""
+        if not self.window_is_drawn():
+            raise RuntimeWarning('Window is not drawn!')
+            return
+
         p = visit.PseudocolorAttributes()
 
-        ct_orig = p.colorTableName
+        ct_orig = visit.GetActiveContinuousColorTable()
         invrt_orig = p.invertColorTable
         scaling_orig = p.scaling
 
@@ -183,7 +188,7 @@ class VisitAPI:
         if len(self.metadata['windows'][wid]['plots']) < 1:
             raise RuntimeError('No plots found in this window!')
 
-        if var not in self.metadata['variables']:
+        if var not in self.metadata['windows'][wid]['variables']:
             raise RuntimeError('No variable name', var)
 
         if visit.ChangeActivePlotsVar(var) == 1:
@@ -219,6 +224,7 @@ class VisitAPI:
 
         wid = self.active_window_id()
         self.metadata['windows'][wid]['operators'].append(so)
+        self.metadata['windows'][wid]['drawn'] = False
 
 
     def draw(self, xtitle='X', xunit='Mpc', xscale='linear', xmin=None, xmax=None,
@@ -265,7 +271,6 @@ class VisitAPI:
     def invert(self):
         """Inverting background and foreground colors"""
         visit.InvertBackgroundColor()
-
 
 
     def query(self, q=''):
@@ -324,11 +329,12 @@ class VisitAPI:
     def _new_window_object(self):
         return {
             'database': '',
+            'variables': [],
             'cycle': 0,
             'id': '',
             'plots': [],
             'operators': [],
-            'drawn': False
+            'drawn': False,
         }
 
 
@@ -344,6 +350,15 @@ class VisitAPI:
 
     def windows(self):
         return visit.GetGlobalAttributes().windows
+
+
+    def window_is_drawn(self):
+        wid = self.active_window_id()
+
+        if self.metadata['windows'][wid]['drawn']:
+            return True
+        else:
+            return False
 
 
     def close(self):

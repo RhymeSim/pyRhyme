@@ -27,11 +27,21 @@ $ export C_INCLUDE_PATH=/path/to/visit/version/arch/include:$C_INCLUDE_PATH
 Import `py_rhyme.visit` and enjoy the power of VisIt,
 
 ```python
->>> from py_rhyme.visit import VisitAPI as Vis
+>>> from py_rhyme.visit import VisItAPI as Vis
 >>> v = Vis(interactive=True) # False if you don't wish to open VisIt viewer
 >>> v.open('/path/output_000.h5') # For a database use: /path/output_*
 >>> v.pseudocolor('rho')
 >>> v.slice(origin_type='Percent', val=50, axis_type='ZAxis')
->>> v.draw_plots()
+>>> v.draw()
 >>> v.close()
 ```
+
+To use the full power of VisIt, you also might want to import VisIt python
+package:
+
+```python
+>>> import visit
+```
+
+Note, for each session, there is only one instance of visit module (I know!), so
+by importing VisIt python package, you can harvest the full capability of VisIt.

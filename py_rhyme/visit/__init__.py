@@ -1,1 +1,1 @@
-from .api import VisitAPI
+from .api import VisItAPI

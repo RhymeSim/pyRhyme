@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+from py_rhyme.visit import VisItAPI as Vis
+import argparse
+import sys
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Plotting a slice of a given chombo file')
+
+    parser.add_argument('chombo_path', help='Path to chombo file', type=str)
+
+    parser.add_argument('--var', help='Pseudocolor plot variable',
+        type=str, default='rho')
+    parser.add_argument('-s', '--scaling', help='Pseudocolor plot scaling',
+        choices=['linear', 'log'], type=str, default='log')
+    parser.add_argument('--min', help='Pseudocolor minimum value',
+        type=float, default=None)
+    parser.add_argument('--max', help='Pseudocolor maximum value',
+        type=float, default=None)
+    parser.add_argument('-c', '--colortable', help='Pseudocolor colortable',
+        type=str, default='RdYlBu')
+    parser.add_argument('--invert', help='Inverting pseudocolor colortable',
+        action='store_false')
+
+    parser.add_argument('-a', '--axis', help='Slicing axis',
+        choices=['x', 'y', 'z'], type=str, default='z')
+    parser.add_argument('-p', '--percent', help='Slicing layer (percent)',
+        type=int, default=50)
+
+    args = parser.parse_args()
+
+    if args.axis is 'x':
+        axis_type = 'XAxis'
+    elif args.axis is 'y':
+        axis_type = 'YAxis'
+    else:
+        axis_type = 'ZAxis'
+
+    v = Vis()
+    v.open(args.chombo_path)
+    v.pseudocolor(args.var, scaling=args.scaling, zmin=args.min, zmax=args.max,
+        ct=args.colortable, invert_ct=args.invert)
+    v.slice(origin_type='Percent', val=args.percent, axis_type=axis_type)
+    v.draw()
+
+    print('enter q to quit')
+    while(True):
+        key = sys.stdin.read(1)
+        if key == 'q' or key == 'Q': exit()
+
+
+if __name__ == '__main__':
+    main()
