@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 from py_rhyme.visit import VisItAPI as Vis
 import argparse
-import sys, time
+import sys, os, glob, time, re
 
 
 def print_usage():
     print('')
     print('q            quit')
     print('d            draw')
+    print('c[cycle]     cycle: c123')
     print('s[scaling]   change the plot scaling: slinear')
     print('v[variable]  change variable: vrho_u')
     print('')
@@ -20,6 +21,12 @@ def handle_commands(v):
         sys.exit(0)
     elif key == 'd':
         v.draw()
+    elif key == 'c':
+        cycle = sys.stdin.readline().replace('\n', '')
+        try:
+            v.cycle(int(cycle))
+        except (RuntimeError, RuntimeWarning) as err:
+            print(err)
     elif key == 's':
         scaling = sys.stdin.readline().replace('\n', '')
         v.change_scaling(scaling)
@@ -38,6 +45,16 @@ def handle_commands(v):
         print_usage()
 
     time.sleep(.3)
+
+
+def check_if_database(path):
+    matches = re.findall('[0-9]{5}', path)
+
+    if len(matches) < 1:
+        return path
+
+    ds = path.replace(matches[-1], '*')
+    return path if len(glob.glob(ds)) == 1 else os.path.splitext(ds)[0]
 
 
 def main():
@@ -73,8 +90,10 @@ def main():
     else:
         axis_type = 'ZAxis'
 
+    ds = check_if_database(args.chombo_path)
+
     v = Vis()
-    v.open(args.chombo_path)
+    v.open(ds)
     v.pseudocolor(args.var, scaling=args.scaling, zmin=args.min, zmax=args.max,
         ct=args.colortable, invert_ct=args.invert)
     v.slice(origin_type='Percent', val=args.percent, axis_type=axis_type)
