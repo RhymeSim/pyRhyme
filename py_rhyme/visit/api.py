@@ -1,11 +1,13 @@
 import time, copy, os
-from .pseudocolor_plot_helper import pseudocolor_plot_attr, is_pseudocolor_plot, \
-    set_pseudocolor_plot_colortable, set_pseudocolor_plot_variable
-from .curve_plot_helper import curve_plot_attr, is_curve_plot, \
+from .helpers.pseudocolor_plot_helper import pseudocolor_plot_attr, \
+    is_pseudocolor_plot, set_pseudocolor_plot_colortable, \
+    set_pseudocolor_plot_variable
+from .helpers.curve_plot_helper import curve_plot_attr, is_curve_plot, \
     set_curve_plot_variable
-from .slice_operator_helper import slice_operator_attr, is_slice_operator
-from .draw_plots_helper import draw_plots_attr
-from .line_helper import new_line
+from .helpers.slice_operator_helper import slice_operator_attr, \
+    is_slice_operator
+from .helpers.draw_plots_helper import draw_plots_attr
+from .helpers.line_helper import new_line
 
 try:
     import visit
