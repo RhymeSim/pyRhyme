@@ -5,42 +5,78 @@ import sys, os, glob, time, re
 
 
 def print_usage():
-    print('')
+    print('Following commands can be used to update the slice plot,')
     print('q            quit')
     print('d            draw')
     print('c[cycle]     cycle: c123')
+    print('n            next cycle')
+    print('p            previous cycle')
+    print('l[cycles]    loop through database, starting from current cycle')
     print('s[scaling]   change the plot scaling: slinear')
     print('v[variable]  change variable: vrho_u')
     print('')
 
 
-def handle_commands(v):
+def handle_commands(v, ds_len):
+    current_cycle = 0
+
     key = sys.stdin.read(1)
 
     if key == 'q':
         sys.exit(0)
+
     elif key == 'd':
         v.draw()
+
     elif key == 'c':
-        cycle = sys.stdin.readline().replace('\n', '')
+        cycle = int(sys.stdin.readline().replace('\n', ''))
         try:
-            v.cycle(int(cycle))
+            v.cycle(cycle)
         except (RuntimeError, RuntimeWarning) as err:
             print(err)
+
+        print(current_cycle, cycle)
+        current_cycle = cycle
+        print(current_cycle, cycle)
+
+    elif key == 'n':
+        v.next_cycle()
+        current_cycle += 1
+
+    elif key == 'p':
+        v.prev_cycle()
+        current_cycle -= 1
+
+    elif key == 'l':
+        orig_cycle = current_cycle
+        ncycles = str(sys.stdin.readline().replace('\n', ''))
+
+        print(orig_cycle, current_cycle, current_cycle + int(ncycles) + 1)
+        if len(ncycles) > 0:
+            for i in range(current_cycle, current_cycle + int(ncycles) + 1):
+                v.cycle(i)
+        else:
+            for i in range(current_cycle, ds_len + 1):
+                v.cycle(i)
+
+        v.cycle(orig_cycle)
+
     elif key == 's':
-        scaling = sys.stdin.readline().replace('\n', '')
+        scaling = str(sys.stdin.readline().replace('\n', ''))
         v.change_scaling(scaling)
         try:
             v.draw()
         except (RuntimeError, RuntimeWarning) as err:
             print(err)
+
     elif key == 'v':
-        vrbl = sys.stdin.readline().replace('\n', '')
-        v.change_variable(vrbl)
+        variable = str(sys.stdin.readline().replace('\n', ''))
+        v.change_variable(variable)
         try:
             v.draw()
         except (RuntimeError, RuntimeWarning) as err:
             print(err)
+
     else:
         print_usage()
 
@@ -54,7 +90,9 @@ def check_if_database(path):
         return path
 
     ds = path.replace(matches[-1], '*')
-    return path if len(glob.glob(ds)) == 1 else os.path.splitext(ds)[0]
+    ds_len = len(glob.glob(ds))
+
+    return (os.path.splitext(ds)[0], ds_len) if ds_len > 1 else (path, 1)
 
 
 def main():
@@ -90,7 +128,7 @@ def main():
     else:
         axis_type = 'ZAxis'
 
-    ds = check_if_database(args.chombo_path)
+    ds, ds_len = check_if_database(args.chombo_path)
 
     v = Vis()
     v.open(ds)
@@ -103,7 +141,7 @@ def main():
     print_usage()
 
     while(True):
-        handle_commands(v)
+        handle_commands(v, ds_len)
 
 if __name__ == '__main__':
     main()

@@ -80,6 +80,49 @@ class VisItAPI:
             self.metadata['windows'][wid]['variables'].append(
                 md.GetScalars(i).name)
 
+        vars = self.metadata['windows'][wid]['variables']
+
+        if 'rho' in vars:
+            rho2v2 = ''
+
+            # Momenta
+            if 'rho_u' in vars:
+                visit.DefineScalarExpression('u', 'rho_u / rho')
+                self.metadata['windows'][wid]['variables'].append('u')
+                rho2v2 += 'rho_u^2'
+            if 'rho_v' in vars:
+                visit.DefineScalarExpression('v', 'rho_v / rho')
+                self.metadata['windows'][wid]['variables'].append('v')
+                rho2v2 += ' + rho_v^2'
+            if 'rho_w' in vars:
+                visit.DefineScalarExpression('w', 'rho_w / rho')
+                self.metadata['windows'][wid]['variables'].append('w')
+                rho2v2 += ' + rho_w^2'
+
+            if len(rho2v2) > 0:
+                visit.DefineScalarExpression('rho2v2', rho2v2)
+                self.metadata['windows'][wid]['variables'].append('rho2v2')
+                visit.DefineScalarExpression('v2', rho2v2 + ' / rho^2')
+                self.metadata['windows'][wid]['variables'].append('v2')
+                visit.DefineScalarExpression('|v|', 'sqrt(' + rho2v2 + ') / rho')
+                self.metadata['windows'][wid]['variables'].append('|v|')
+
+                if 'e_tot' in vars:
+                    # Energy
+                    visit.DefineScalarExpression('e_kin', '0.5 * rho2v2 / rho')
+                    self.metadata['windows'][wid]['variables'].append('e_kin')
+                    visit.DefineScalarExpression('e_int', 'e_tot - e_kin')
+                    self.metadata['windows'][wid]['variables'].append('e_int')
+
+                    # Pressure
+                    visit.DefineScalarExpression('p_mon', 'e_int * (5.0/3 - 1)')
+                    self.metadata['windows'][wid]['variables'].append('p_mon')
+                    visit.DefineScalarExpression('p_di', 'e_int * (7.0/5 - 1)')
+                    self.metadata['windows'][wid]['variables'].append('p_di')
+                    visit.DefineScalarExpression('p', 'p_mon')
+                    self.metadata['windows'][wid]['variables'].append('p')
+
+
 
     def cycle(self, c):
         """
@@ -92,13 +135,21 @@ class VisItAPI:
         n_cycles = visit.GetDatabaseNStates()
 
         if not 0 <= c < n_cycles:
-            raise RuntimeWarning('Out of range of cycles!', c)
+            raise RuntimeWarning('Out of range of cycles!', c, ' out of ', n_cycles)
 
         if visit.SetTimeSliderState(c) != 1:
             raise RuntimeWarning('Unable to change database state to:', c)
 
         wid = self.active_window_id()
         self.metadata['windows'][wid]['cycle'] = c
+
+
+    def next_cycle(self):
+        visit.TimeSliderNextState()
+
+
+    def prev_cycle(self):
+        visit.TimeSliderPreviousState()
 
 
     def pseudocolor(self, var, scaling='log', zmin=None, zmax=None,
