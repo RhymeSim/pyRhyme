@@ -11,8 +11,8 @@ def curve_plot_attr(rs, ds):
     ds: domain scale, log or linear
     """
     ca = ViewCurveAttributes()
-    ca.rangeScale = ca.LOG if rs is 'log' else ca.LINEAR
-    ca.domainScale = ca.LOG if ds is 'log' else ca.LINEAR
+    ca.rangeScale = ca.LOG if rs == 'log' else ca.LINEAR
+    ca.domainScale = ca.LOG if ds == 'log' else ca.LINEAR
 
     co = _new_curve_plot_object()
     co['range_scale'] = rs
@@ -31,7 +31,7 @@ def _new_curve_plot_object():
 
 
 def is_curve_plot(plot_obj):
-    if 'type' in plot_obj and plot_obj['type'] is 'curve':
+    if 'type' in plot_obj and plot_obj['type'] == 'curve':
         return True
     else:
         return False

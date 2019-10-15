@@ -1,7 +1,43 @@
 #!/usr/bin/env python
 from py_rhyme.visit import VisItAPI as Vis
 import argparse
-import sys
+import sys, time
+
+
+def print_usage():
+    print('')
+    print('q            quit')
+    print('d            draw')
+    print('s[scaling]   change the plot scaling: slinear')
+    print('v[variable]  change variable: vrho_u')
+    print('')
+
+
+def handle_commands(v):
+    key = sys.stdin.read(1)
+
+    if key == 'q':
+        sys.exit(0)
+    elif key == 'd':
+        v.draw()
+    elif key == 's':
+        scaling = sys.stdin.readline().replace('\n', '')
+        v.change_scaling(scaling)
+        try:
+            v.draw()
+        except (RuntimeError, RuntimeWarning) as err:
+            print(err)
+    elif key == 'v':
+        vrbl = sys.stdin.readline().replace('\n', '')
+        v.change_variable(vrbl)
+        try:
+            v.draw()
+        except (RuntimeError, RuntimeWarning) as err:
+            print(err)
+    else:
+        print_usage()
+
+    time.sleep(.3)
 
 
 def main():
@@ -44,12 +80,11 @@ def main():
     v.slice(origin_type='Percent', val=args.percent, axis_type=axis_type)
     v.draw()
 
-    print('enter q to quit')
-    while(True):
-        key = sys.stdin.read(1)
-        if key == 'q':
-            sys.exit(0)
 
+    print_usage()
+
+    while(True):
+        handle_commands(v)
 
 if __name__ == '__main__':
     main()

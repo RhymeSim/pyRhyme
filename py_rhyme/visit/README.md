@@ -33,6 +33,10 @@ Import `py_rhyme.visit` and enjoy the power of VisIt,
 >>> v.pseudocolor('rho')
 >>> v.slice(origin_type='Percent', val=50, axis_type='ZAxis')
 >>> v.draw()
+>>> v.cycle(17)
+>>> v.change_scaling('linear')
+>>> v.change_variable('rho_u')
+>>> v.draw()
 >>> v.close()
 ```
 

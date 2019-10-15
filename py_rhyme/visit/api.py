@@ -118,7 +118,7 @@ class VisItAPI:
         if visit.AddPlot( 'Pseudocolor', var, 1, 1 ) != 1:
             raise RuntimeWarning('Unable to add Pseudocolor plot.')
 
-        psa, pso = pseudocolor_plot_attr(scaling, zmin, zmax, ct, invert_ct)
+        psa, pso = pseudocolor_plot_attr(var, scaling, zmin, zmax, ct, invert_ct)
         visit.SetPlotOptions(psa)
 
         wid = self.active_window_id()
@@ -183,46 +183,6 @@ class VisItAPI:
         return -1
 
 
-    def change_variable(self, var, scaling=None, zmin=None, zmax=None, ct=None,
-        origin_type=None, val=None, axis_type=None):
-        wid = self.active_window_id()
-
-        if len(self.metadata['windows'][wid]['plots']) < 1:
-            raise RuntimeError('No plots found in this window!')
-
-        if var not in self.metadata['windows'][wid]['variables']:
-            raise RuntimeError('No variable name', var)
-
-        plots = copy.deepcopy(self.metadata['windows'][wid]['plots'])
-        operators = copy.deepcopy(self.metadata['windows'][wid]['operators'])
-
-        if visit.DeleteActivePlots() != 1:
-            raise RuntimeError('Unable to delete mesh plots!')
-        if visit.DeleteAllPlots() != 1:
-            raise RuntimeError('Unable to delete pseudocolor and contour plots')
-
-        self.metadata['windows'][wid]['plots'] = []
-        self.metadata['windows'][wid]['operators'] = []
-
-        for p in plots:
-            if is_pseudocolor_plot(p):
-                sc = p['scaling'] if scaling is None else scaling
-                zmin = p['min'] if zmin is None else zmin
-                zmax = p['max'] if zmax is None else zmax
-                ct = p['ct'] if ct is None else ct
-                self.pseudocolor(var, scaling=sc, zmin=zmin, zmax=zmax,
-                    ct=ct, invert_ct=p['invert_ct'])
-            elif is_curve_plot(p):
-                pass
-
-        for o in operators:
-            if is_slice_operator(o):
-                ot = o['origin_type'] if origin_type is None else origin_type
-                v = o['value'] if val is None else val
-                at = o['axis_type'] if axis_type is None else axis_type
-                self.slice(origin_type=ot, val=v, axis_type=at)
-
-
     def slice(self, origin_type='Percent', val=50, axis_type='ZAxis', all=1):
         """
         Adding a slice operator
@@ -268,6 +228,52 @@ class VisItAPI:
 
         wid = self.active_window_id()
         self.metadata['windows'][wid]['drawn'] = True
+
+
+    def redraw(self, variable=None, scaling=None, zmin=None, zmax=None, ct=None,
+        origin_type=None, val=None, axis_type=None):
+        wid = self.active_window_id()
+
+        if len(self.metadata['windows'][wid]['plots']) < 1:
+            raise RuntimeError('No plots found in this window!')
+
+        plots = copy.deepcopy(self.metadata['windows'][wid]['plots'])
+        operators = copy.deepcopy(self.metadata['windows'][wid]['operators'])
+
+        if visit.DeleteActivePlots() != 1:
+            raise RuntimeError('Unable to delete mesh plots!')
+        if visit.DeleteAllPlots() != 1:
+            raise RuntimeError('Unable to delete pseudocolor and contour plots')
+
+        self.metadata['windows'][wid]['plots'] = []
+        self.metadata['windows'][wid]['operators'] = []
+
+        for p in plots:
+            if is_pseudocolor_plot(p):
+                var = p['variable'] if variable is None else variable
+                sc = p['scaling'] if scaling is None else scaling
+                zmn = p['min'] if zmin is None else zmin
+                zmx = p['max'] if zmax is None else zmax
+                ct = p['ct'] if ct is None else ct
+                self.pseudocolor(var, scaling=sc, zmin=zmn, zmax=zmx,
+                    ct=ct, invert_ct=p['invert_ct'])
+            elif is_curve_plot(p):
+                pass
+
+        for o in operators:
+            if is_slice_operator(o):
+                ot = o['origin_type'] if origin_type is None else origin_type
+                v = o['value'] if val is None else val
+                at = o['axis_type'] if axis_type is None else axis_type
+                self.slice(origin_type=ot, val=v, axis_type=at)
+
+
+    def change_variable(self, variable):
+        self.redraw(variable=variable)
+
+
+    def change_scaling(self, scaling):
+        self.redraw(scaling=scaling)
 
 
     def line(self, p1=(0.75, 0.75), p2=(0.75, 0.75), width=1,

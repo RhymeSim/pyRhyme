@@ -4,12 +4,19 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-def pseudocolor_plot_attr(scaling, zmin, zmax, ct, invert_ct):
+def pseudocolor_plot_attr(variable, scaling, zmin, zmax, ct, invert_ct):
     """
     Creating pseudocolor objects
     """
     psa = visit.PseudocolorAttributes()
-    psa.scaling = psa.Log if scaling is 'log' else psa.Linear
+
+    if scaling == 'log':
+        psa.scaling = psa.Log
+    elif scaling == 'linear':
+        psa.scaling = psa.Linear
+    else:
+        raise RuntimeWarning('Unknonw scaling', scaling)
+
     psa.minFlag = 0 if zmin is None else 1
     psa.min = zmin if zmin is not None else 0
     psa.maxFlag = 0 if zmax is None else 1
@@ -18,6 +25,7 @@ def pseudocolor_plot_attr(scaling, zmin, zmax, ct, invert_ct):
     psa.invertColorTable = invert_ct
 
     pso = _new_pseudocolor_object()
+    pso['variable'] = variable
     pso['scaling'] = scaling
     pso['min'] = zmin
     pso['max'] = zmax
@@ -40,7 +48,7 @@ def is_pseudocolor_plot(plot_obj):
     """
     Return True if the object is a pseudocolor object
     """
-    if 'type' in plot_obj and plot_obj['type'] is 'pseudocolor':
+    if 'type' in plot_obj and plot_obj['type'] == 'pseudocolor':
         return True
     else:
         return False

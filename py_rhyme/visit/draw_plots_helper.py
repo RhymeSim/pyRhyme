@@ -98,14 +98,14 @@ def draw_plots_attr(xt, xu, xs, xn, xx, yt, yu, ys, yn, yx, c, bg, fg, se):
 
 
     # View2D Attributes
-    if xs is 'log':
+    if xs == 'log':
         v2da.xScale = v2da.LOG
-    elif xs is 'linear':
+    elif xs == 'linear':
         v2da.xScale = v2da.LINEAR
 
-    if ys is 'log':
+    if ys == 'log':
         v2da.yScale = v2da.LOG
-    elif ys is 'linear':
+    elif ys == 'linear':
         v2da.yScale = v2da.LINEAR
 
     spatial_extents = [

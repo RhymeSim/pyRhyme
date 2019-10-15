@@ -13,15 +13,15 @@ def slice_operator_attr(ot, v, at):
     """
     sa = visit.SliceAttributes()
 
-    if ot is 'Percent':
+    if ot == 'Percent':
         sa.originType = sa.Percent
         sa.originPercent = v
 
-    if at is 'XAxis':
+    if at == 'XAxis':
         sa.axisType = sa.XAxis
-    elif at is 'YAxis':
+    elif at == 'YAxis':
         sa.axisType = sa.YAxis
-    elif at is 'ZAxis':
+    elif at == 'ZAxis':
         sa.axisType = sa.ZAxis
     else:
         raise RuntimeWarning(at, 'is not a valid axis type.')
@@ -44,7 +44,7 @@ def _new_slice_operator_object():
 
 
 def is_slice_operator(op_obj):
-    if 'type' in op_obj and op_obj['type'] is 'slice':
+    if 'type' in op_obj and op_obj['type'] == 'slice':
         return True
     else:
         return False
