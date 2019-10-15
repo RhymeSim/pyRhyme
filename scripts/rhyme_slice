@@ -47,7 +47,8 @@ def main():
     print('enter q to quit')
     while(True):
         key = sys.stdin.read(1)
-        if key == 'q' or key == 'Q': exit()
+        if key == 'q':
+            sys.exit(0)
 
 
 if __name__ == '__main__':

@@ -22,7 +22,7 @@ def pseudocolor_plot_attr(scaling, zmin, zmax, ct, invert_ct):
     pso['min'] = zmin
     pso['max'] = zmax
     pso['ct'] = ct
-    pso['invert_ct'] = True if invert_ct == 1 else False
+    pso['invert_ct'] = invert_ct
 
     return psa, pso
 
@@ -62,5 +62,5 @@ def _new_pseudocolor_object():
         'min': 0,
         'max': 0,
         'ct': '',
-        'invert_ct': False
+        'invert_ct': 0
     }

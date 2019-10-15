@@ -95,6 +95,7 @@ class VisItAPI:
         if visit.SetTimeSliderState(c) != 1:
             raise RuntimeWarning('Unable to change database state to:', c)
 
+        wid = self.active_window_id()
         self.metadata['windows'][wid]['cycle'] = c
 
 
@@ -182,7 +183,8 @@ class VisItAPI:
         return -1
 
 
-    def plot_variable(self, var):
+    def change_variable(self, var, scaling=None, zmin=None, zmax=None, ct=None,
+        origin_type=None, val=None, axis_type=None):
         wid = self.active_window_id()
 
         if len(self.metadata['windows'][wid]['plots']) < 1:
@@ -191,14 +193,34 @@ class VisItAPI:
         if var not in self.metadata['windows'][wid]['variables']:
             raise RuntimeError('No variable name', var)
 
-        if visit.ChangeActivePlotsVar(var) == 1:
-            for plot in self.metadata['windows'][wid]['plots']:
-                if is_pseudocolor_plot(plot):
-                    set_pseudocolor_plot_variable(plot, var)
-                elif is_curve_plot(plot):
-                    set_curve_plot_variable(plot, var)
-            else:
-                raise RuntimeError('Unable to change plots variable!')
+        plots = copy.deepcopy(self.metadata['windows'][wid]['plots'])
+        operators = copy.deepcopy(self.metadata['windows'][wid]['operators'])
+
+        if visit.DeleteActivePlots() != 1:
+            raise RuntimeError('Unable to delete mesh plots!')
+        if visit.DeleteAllPlots() != 1:
+            raise RuntimeError('Unable to delete pseudocolor and contour plots')
+
+        self.metadata['windows'][wid]['plots'] = []
+        self.metadata['windows'][wid]['operators'] = []
+
+        for p in plots:
+            if is_pseudocolor_plot(p):
+                sc = p['scaling'] if scaling is None else scaling
+                zmin = p['min'] if zmin is None else zmin
+                zmax = p['max'] if zmax is None else zmax
+                ct = p['ct'] if ct is None else ct
+                self.pseudocolor(var, scaling=sc, zmin=zmin, zmax=zmax,
+                    ct=ct, invert_ct=p['invert_ct'])
+            elif is_curve_plot(p):
+                pass
+
+        for o in operators:
+            if is_slice_operator(o):
+                ot = o['origin_type'] if origin_type is None else origin_type
+                v = o['value'] if val is None else val
+                at = o['axis_type'] if axis_type is None else axis_type
+                self.slice(origin_type=ot, val=v, axis_type=at)
 
 
     def slice(self, origin_type='Percent', val=50, axis_type='ZAxis', all=1):
