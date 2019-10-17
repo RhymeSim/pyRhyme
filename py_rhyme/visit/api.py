@@ -329,6 +329,10 @@ class VisItAPI:
         self.redraw(scaling=scaling)
 
 
+    def change_layer(self, layer, origin_type=None, axis_type=None):
+        self.redraw(origin_type=origin_type, val=layer, axis_type=None)
+
+
     def line(self, p1=(0.75, 0.75), p2=(0.75, 0.75), width=1,
         color=(0, 0, 0, 255), opacity=255, begin_arrow=0, end_arrow=0):
         """
