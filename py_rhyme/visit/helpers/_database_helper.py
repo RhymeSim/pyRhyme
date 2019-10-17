@@ -18,13 +18,9 @@ def _open_database(chombo_path):
     if len(ls) > 1:
         cycle = ls.index(chombo_path)
         path = os.path.splitext(chombo_path.replace(matches[-1], '*'))[0] + ' database'
-        id = os.path.basename(
-            os.path.splitext(chombo_path.replace(matches[-1], 'database'))[0]
-        ).replace('.', '_')
     else:
         cycle = 0
         path = chombo_path
-        id = os.path.basename(chombo_path).replace('.', '_')
 
     if visit.OpenDatabase(path, cycle, 'Chombo') != 1:
         raise RuntimeError('Unable to open database:', path)
@@ -35,9 +31,7 @@ def _open_database(chombo_path):
     for i in range(md.GetNumScalars()):
         vars.append(md.GetScalars(i).name)
 
-    vars = vars + __new_expressions(vars)
-
-    return path, id, cycle, md.cycles, md.times, vars
+    _new_expressions(vars)
 
 
 def _change_state(state):
@@ -53,11 +47,9 @@ def _change_state(state):
         raise RuntimeWarning('Unable to change database state to:', state)
 
 
-def __new_expressions(vars):
-    extra_vars = []
-
+def _new_expressions(vars):
     if 'rho' not in vars:
-        return extra_vars
+        return
 
     rho2v2 = ''
 
@@ -65,29 +57,18 @@ def __new_expressions(vars):
     for rhov in ['rho_u', 'rho_v', 'rho_w']:
         if rhov in vars:
             visit.DefineScalarExpression(rhov[-1], rhov + ' / rho')
-            extra_vars.append(rhov[-1])
             rho2v2 += rhov + '^2' if len(rho2v2) < 1 else ' + ' + rhov + '^2'
 
     if len(rho2v2) < 1 or 'e_tot' not in vars:
-        return extra_vars
+        return
 
     visit.DefineScalarExpression('rho2v2', rho2v2)
-    extra_vars.append('rho2v2')
     visit.DefineScalarExpression('v2', rho2v2 + ' / rho^2')
-    extra_vars.append('v2')
     visit.DefineScalarExpression('|v|', 'sqrt(v2)')
-    extra_vars.append('|v|')
-
 
     visit.DefineScalarExpression('e_kin', '0.5 * rho2v2 / rho')
-    extra_vars.append('e_kin')
     visit.DefineScalarExpression('e_int', 'e_tot - e_kin')
-    extra_vars.append('e_int')
-    visit.DefineScalarExpression('p_mon', 'e_int * (5.0/3 - 1)')
-    extra_vars.append('p_mon')
-    visit.DefineScalarExpression('p_di', 'e_int * (7.0/5 - 1)')
-    extra_vars.append('p_di')
-    visit.DefineScalarExpression('p', 'p_mon')
-    extra_vars.append('p')
 
-    return extra_vars
+    visit.DefineScalarExpression('p_mon', 'e_int * (5.0/3 - 1)')
+    visit.DefineScalarExpression('p_di', 'e_int * (7.0/5 - 1)')
+    visit.DefineScalarExpression('p', 'p_mon')

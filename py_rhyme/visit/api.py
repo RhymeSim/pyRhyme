@@ -9,6 +9,7 @@ from .helpers.slice_operator_helper import slice_operator_attr, \
 from .helpers.draw_plots_helper import draw_plots_attr
 from .helpers.line_helper import new_line
 from .helpers._database_helper import _open_database, _change_state
+from .helpers.metadata_helper import _generate_metadata
 
 try:
     import visit
@@ -20,13 +21,6 @@ class VisItAPI:
     """
     VisIt wrapper
     """
-
-    METADATA = {
-        'windows': [],
-    }
-
-    SCALING_TYPES = { 'log': 1, 'linear': 2 }
-
 
     def __init__(self, interactive=True):
         """
@@ -181,7 +175,7 @@ class VisItAPI:
             Node: <Number>
         axis_type: XAxis, YAxis, ZAxis
         """
-        if visit.AddOperator('Slice', 1) != 1:
+        if visit.AddOperator('Slice', 0) != 1:
             raise RuntimeWarning('Unable to add Slice operator')
 
         sa, so = slice_operator_attr(origin_type, val, axis_type)
