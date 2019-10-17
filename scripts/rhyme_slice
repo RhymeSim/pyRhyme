@@ -81,87 +81,36 @@ MODES = {
 }
 
 
-def handle_commands(v, ds_len):
+def handle_commands(v, command):
+    if len(command) < 2:
+        print('Wrong command combination!', command)
+        return
+
+    mode = command[0]
+    action = command[1]
+    value = command[2:] if len(command) > 2 else ''
+
+    if mode not in MODES:
+        print('Unknonw mode:', mode)
+        return
+
+    if action not in MODES[mode]['actions']:
+        print('Unknown action', action, 'in', mode, 'mode')
+        return
+
+    if 'before' in MODES[mode]['actions'][action]:
+        MODES[mode]['actions'][action]['before'](v, value)
+
+    MODES[mode]['actions'][action]['run'](v, value)
+
+    if 'after' in MODES[mode]['actions'][action]:
+        MODES[mode]['actions'][action]['after'](v, value)
+
+
+def inline_commands(v):
     while True:
         command = str(sys.stdin.readline().replace('\n', ''))
-
-        if len(command) < 2:
-            print('Wrong command combination!', command)
-            continue
-
-        mode = command[0]
-        action = command[1]
-        value = command[2:] if len(command) > 2 else ''
-
-        if mode not in MODES:
-            print('Unknonw mode:', mode)
-            continue
-
-        if action not in MODES[mode]['actions']:
-            print('Unknown action', action, 'in', mode, 'mode')
-            continue
-
-        if 'before' in MODES[mode]['actions'][action]:
-            MODES[mode]['actions'][action]['before'](v, value)
-
-        MODES[mode]['actions'][action]['run'](v, value)
-
-        if 'after' in MODES[mode]['actions'][action]:
-            MODES[mode]['actions'][action]['after'](v, value)
-
-DS = {
-    'path': '',
-    'ncycles': 0,
-    'current_cycle': 0,
-}
-
-
-def set_current_cycle(n):
-    if 0 <= n < DS['ncycles']:
-        DS['current_cycle'] = n
-    elif n < 0:
-        DS['current_cycle'] = n + DS['ncycles']
-    elif n > DS['ncycles']:
-        DS['current_cycle'] = n - DS['ncycles']
-
-
-def play(o, n):
-    if len(str(n)) > 0:
-        to_cycle = DS['current_cycle'] + int(n)
-    else:
-        to_cycle = DS['ncycles']
-
-    for i in range(DS['current_cycle'], to_cycle):
-        o.cycle(i)
-
-
-def handle_commands(v):
-    while True:
-        command = str(sys.stdin.readline().replace('\n', ''))
-
-        if len(command) < 2:
-            print('Unknown combination!', command)
-            continue
-
-        mode = command[0]
-        action = command[1]
-        value = command[2:] if len(command) > 2 else ''
-
-        if mode not in MODES:
-            print('Unknonw mode:', mode)
-            continue
-
-        if action not in MODES[mode]['actions']:
-            print('Unknown action', action, 'in', mode, 'mode')
-            continue
-
-        if 'before' in MODES[mode]['actions'][action]:
-            MODES[mode]['actions'][action]['before'](v, value)
-
-        MODES[mode]['actions'][action]['run'](v, value)
-
-        if 'after' in MODES[mode]['actions'][action]:
-            MODES[mode]['actions'][action]['after'](v, value)
+        handle_commands(v, command)
 
 
 def main():
@@ -179,6 +128,7 @@ def main():
 
     parser.add_argument('-a', '--axis', help='Slicing axis', choices=['x', 'y', 'z'], type=str, default='z')
     parser.add_argument('-p', '--percent', help='Slicing layer (percent)', type=int, default=50)
+    parser.add_argument('--commands', help='Comma separated list of inline commands', type=str, default='')
 
     args = parser.parse_args()
     axis_type = 'ZAxis' if args.axis == 'z' else ('YAxis' if args.axis == 'y' else 'XAxis')
@@ -202,6 +152,12 @@ def main():
     v.draw()
 
 
+    if len(args.commands) > 0:
+        commands = args.commands.replace(' ', '').split(',')
+        for command in commands:
+            handle_commands(v, command)
+
+
     print('Combine following modes and actions to execute a command:')
     print(MODES.keys())
     for m in MODES.keys():
@@ -209,7 +165,7 @@ def main():
         for c in MODES[m]['actions'].keys():
             print('-%-7s: %-40s e.g. %s' % (c, MODES[m]['actions'][c]['desc'], MODES[m]['actions'][c]['ex']))
 
-    handle_commands(v)
+    inline_commands(v)
 
 
 if __name__ == '__main__':
