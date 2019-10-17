@@ -76,6 +76,11 @@ class VisItAPI:
         )
 
         md = visit.GetMetaData(ds)
+
+        self.metadata['windows'][wid]['cycles'] = md.cycles
+        self.metadata['windows'][wid]['times'] = md.times
+
+
         for i in range(md.GetNumScalars()):
             self.metadata['windows'][wid]['variables'].append(
                 md.GetScalars(i).name)
@@ -126,7 +131,7 @@ class VisItAPI:
 
     def cycle(self, c):
         """
-        Changing the active time step (in a database)
+        Changing the snapshot to a given cycle index
         """
         if not self.window_is_drawn():
             raise RuntimeWarning('Window is not drawn!')
@@ -150,6 +155,20 @@ class VisItAPI:
 
     def prev_cycle(self):
         visit.TimeSliderPreviousState()
+
+
+    def time(self, t):
+        """
+        Changing the snapshot with the closes time to t
+
+        NB: We assme the list of times is not sorted!
+        """
+        wid = self.active_window_id()
+        diff = [abs(t - time) for time in self.metadata['windows'][wid]['times']]
+
+        cycle = diff.index(min(diff))
+
+        self.cycle(cycle)
 
 
     def pseudocolor(self, var, scaling='log', zmin=None, zmax=None,
@@ -420,6 +439,8 @@ class VisItAPI:
             'plots': [],
             'operators': [],
             'drawn': False,
+            'cycles': [],
+            'times': [],
         }
 
 

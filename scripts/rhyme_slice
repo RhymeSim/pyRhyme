@@ -32,44 +32,52 @@ def play(o, n):
 
 MODES = {
     'x': { 'desc': 'Command mode', 'actions': {
-            'q': { 'desc': 'quit', 'ex': 'xq',
-                'run': lambda o, _: sys.exit(0)
-            },
+        'q': { 'desc': 'quit', 'ex': 'xq',
+            'run': lambda o, _: sys.exit(0)
         },
-    },
+    }},
     'p': { 'desc': 'Plot mode', 'actions': {
-            'd': { 'desc': 'draw', 'ex': 'pd',
-                'run': lambda o, _: o.draw()
-            },
-            's': { 'desc': 'change scaling', 'ex': 'pslinear',
-                'run': lambda o, s: o.change_scaling(str(s)),
-                'after': lambda o, _: o.draw()
-            },
-            'v': { 'desc': 'change variable', 'ex': 'pvrho_u',
-                'run': lambda o, v: o.change_variable(str(v)),
-                'after': lambda o, _: o.draw()
-            },
+        'd': { 'desc': 'draw', 'ex': 'pd',
+            'run': lambda o, _: o.draw()
         },
-    },
+        's': { 'desc': 'change scaling', 'ex': 'pslinear',
+            'run': lambda o, s: o.change_scaling(str(s)),
+            'after': lambda o, _: o.draw()
+        },
+        'v': { 'desc': 'change variable', 'ex': 'pvrho_u',
+            'run': lambda o, v: o.change_variable(str(v)),
+            'after': lambda o, _: o.draw()
+        },
+    }},
+    's': { 'desc': 'Slice mode', 'actions': {
+        'l': { 'desc': 'change layer (%)', 'ex': 'sl25',
+            'run': lambda o, l: o.change_layer(int(l)),
+            'after': lambda o, _: o.draw(),
+        }
+    }},
+    't': { 'desc': 'Time mode', 'actions': {
+        't': { 'desc': 'find snapshot with closes time', 'ex': 'tt16.5',
+            'run': lambda o, t: o.time(float(t)),
+        },
+    }},
     'c': { 'desc': 'Cycle mode', 'actions': {
-            'n': { 'desc': 'change cycle', 'ex': 'cn25',
-                'run': lambda o, n: o.cycle(int(n)),
-                'after': lambda o, n: set_current_cycle(int(n))
-            },
-            'j': { 'desc': 'previous cycle', 'ex': 'cj',
-                'run': lambda o, _: o.prev_cycle(),
-                'after': lambda o, n: set_current_cycle(DS['current_cycle'] - 1)
-            },
-            'k': { 'desc': 'next cycle', 'ex': 'ck',
-                'run': lambda o, _: o.next_cycle(),
-                'after': lambda o, n:  set_current_cycle(DS['current_cycle'] + 1)
-            },
-            'p': { 'desc': 'play', 'ex': 'cp, cp10',
-                'run': lambda o, l: play(o, l),
-                'after': lambda o, _: o.cycle(DS['current_cycle'])
-            },
+        'n': { 'desc': 'change cycle', 'ex': 'cn25',
+            'run': lambda o, n: o.cycle(int(n)),
+            'after': lambda o, n: set_current_cycle(int(n))
         },
-    },
+        'j': { 'desc': 'previous cycle', 'ex': 'cj',
+            'run': lambda o, _: o.prev_cycle(),
+            'after': lambda o, n: set_current_cycle(DS['current_cycle'] - 1)
+        },
+        'k': { 'desc': 'next cycle', 'ex': 'ck',
+            'run': lambda o, _: o.next_cycle(),
+            'after': lambda o, n:  set_current_cycle(DS['current_cycle'] + 1)
+        },
+        'p': { 'desc': 'play', 'ex': 'cp, cp10',
+            'run': lambda o, l: play(o, l),
+            'after': lambda o, _: o.cycle(DS['current_cycle'])
+        },
+    }},
 }
 
 
@@ -125,52 +133,6 @@ def play(o, n):
 
     for i in range(DS['current_cycle'], to_cycle):
         o.cycle(i)
-
-
-MODES = {
-    'x': { 'desc': 'Command mode', 'actions': {
-        'q': { 'desc': 'quit', 'ex': 'xq',
-            'run': lambda o, _: sys.exit(0)
-        },
-    }},
-    'p': { 'desc': 'Plot mode', 'actions': {
-        'd': { 'desc': 'draw', 'ex': 'pd',
-            'run': lambda o, _: o.draw()
-        },
-        's': { 'desc': 'change scaling', 'ex': 'pslinear',
-            'run': lambda o, s: o.change_scaling(str(s)),
-            'after': lambda o, _: o.draw()
-        },
-        'v': { 'desc': 'change variable', 'ex': 'pvrho_u',
-            'run': lambda o, v: o.change_variable(str(v)),
-            'after': lambda o, _: o.draw()
-        },
-    }},
-    's': { 'desc': 'Slice mode', 'actions': {
-        'l': { 'desc': 'change layer (%)', 'ex': 'sl25',
-            'run': lambda o, l: o.change_layer(int(l)),
-            'after': lambda o, _: o.draw(),
-        }
-    }},
-    'c': { 'desc': 'Cycle mode', 'actions': {
-        'n': { 'desc': 'change cycle', 'ex': 'cn25',
-            'run': lambda o, n: o.cycle(int(n)),
-            'after': lambda o, n: set_current_cycle(int(n))
-        },
-        'j': { 'desc': 'previous cycle', 'ex': 'cj',
-            'run': lambda o, _: o.prev_cycle(),
-            'after': lambda o, n: set_current_cycle(DS['current_cycle'] - 1)
-        },
-        'k': { 'desc': 'next cycle', 'ex': 'ck',
-            'run': lambda o, _: o.next_cycle(),
-            'after': lambda o, n:  set_current_cycle(DS['current_cycle'] + 1)
-        },
-        'p': { 'desc': 'play', 'ex': 'cp, cp10',
-            'run': lambda o, l: play(o, l),
-            'after': lambda o, _: o.cycle(DS['current_cycle'])
-        },
-    }},
-}
 
 
 def handle_commands(v):
@@ -241,10 +203,11 @@ def main():
 
 
     print('Combine following modes and actions to execute a command:')
+    print(MODES.keys())
     for m in MODES.keys():
         print('%-8s: %s' % (m, MODES[m]['desc']))
         for c in MODES[m]['actions'].keys():
-            print('-%-7s: %-20s e.g. %s' % (c, MODES[m]['actions'][c]['desc'], MODES[m]['actions'][c]['ex']))
+            print('-%-7s: %-40s e.g. %s' % (c, MODES[m]['actions'][c]['desc'], MODES[m]['actions'][c]['ex']))
 
     handle_commands(v)
 
