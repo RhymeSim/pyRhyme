@@ -9,6 +9,8 @@ from .helpers.slice_operator_helper import slice_operator_attr, \
 from .helpers.draw_plots_helper import draw_plots_attr
 from .helpers.line_helper import new_line
 
+from ._database_handler import _open_database
+
 try:
     import visit
 except ImportError:
@@ -17,7 +19,7 @@ except ImportError:
 
 class VisItAPI:
     """
-    VisIt python package to generate different plots based on Rhyme chombo outpus
+    VisIt wrapper
     """
 
     METADATA = {
@@ -27,17 +29,10 @@ class VisItAPI:
     SCALING_TYPES = { 'log': 1, 'linear': 2 }
 
 
-    def __init__(self, visit_lib_dir=None, interactive=True):
+    def __init__(self, interactive=True):
         """
-        Initializing a VisitAPI object
-
         Parameter
-        visit_lib_dir: Path to VisIt python packages directory
         interactive: If False, VisIt viewer will be shut down
-
-        TODO
-        Add expressions
-        GetCallbackNames()
         """
 
         if not interactive: visit.AddArgument("-nowin")
@@ -53,87 +48,23 @@ class VisItAPI:
 
 
     def open(self, path):
-        """
-        Loading one or a sequence of chombo files
-
-        Parameter
-        path: Path to chombo file(s)
-            Use globbing to open a sequence of files
-            e.g. /path/to/result_0000.chombo.h5
-        """
-
-        ds = path + ' database' if '*' in path else path
-
-        if visit.OpenDatabase(ds, 0, 'Chombo') != 1:
-            raise RuntimeWarning('Unable to open database:', path)
+        path, id, cycle, cycles, times, vars = _open_database(path)
 
         wid = self.active_window_id()
-
-        self.metadata['windows'][wid]['database'] = ds
-        self.metadata['windows'][wid]['cycle'] = 0
-        self.metadata['windows'][wid]['id'] = os.path.basename(
-            os.path.splitext(path)[0].replace('*', 'database').replace('.', '_')
-        )
-
-        md = visit.GetMetaData(ds)
-
-        self.metadata['windows'][wid]['cycles'] = md.cycles
-        self.metadata['windows'][wid]['times'] = md.times
-
-
-        for i in range(md.GetNumScalars()):
-            self.metadata['windows'][wid]['variables'].append(
-                md.GetScalars(i).name)
-
-        vars = self.metadata['windows'][wid]['variables']
-
-        if 'rho' in vars:
-            rho2v2 = ''
-
-            # Momenta
-            if 'rho_u' in vars:
-                visit.DefineScalarExpression('u', 'rho_u / rho')
-                self.metadata['windows'][wid]['variables'].append('u')
-                rho2v2 += 'rho_u^2'
-            if 'rho_v' in vars:
-                visit.DefineScalarExpression('v', 'rho_v / rho')
-                self.metadata['windows'][wid]['variables'].append('v')
-                rho2v2 += ' + rho_v^2'
-            if 'rho_w' in vars:
-                visit.DefineScalarExpression('w', 'rho_w / rho')
-                self.metadata['windows'][wid]['variables'].append('w')
-                rho2v2 += ' + rho_w^2'
-
-            if len(rho2v2) > 0:
-                visit.DefineScalarExpression('rho2v2', rho2v2)
-                self.metadata['windows'][wid]['variables'].append('rho2v2')
-                visit.DefineScalarExpression('v2', rho2v2 + ' / rho^2')
-                self.metadata['windows'][wid]['variables'].append('v2')
-                visit.DefineScalarExpression('|v|', 'sqrt(' + rho2v2 + ') / rho')
-                self.metadata['windows'][wid]['variables'].append('|v|')
-
-                if 'e_tot' in vars:
-                    # Energy
-                    visit.DefineScalarExpression('e_kin', '0.5 * rho2v2 / rho')
-                    self.metadata['windows'][wid]['variables'].append('e_kin')
-                    visit.DefineScalarExpression('e_int', 'e_tot - e_kin')
-                    self.metadata['windows'][wid]['variables'].append('e_int')
-
-                    # Pressure
-                    visit.DefineScalarExpression('p_mon', 'e_int * (5.0/3 - 1)')
-                    self.metadata['windows'][wid]['variables'].append('p_mon')
-                    visit.DefineScalarExpression('p_di', 'e_int * (7.0/5 - 1)')
-                    self.metadata['windows'][wid]['variables'].append('p_di')
-                    visit.DefineScalarExpression('p', 'p_mon')
-                    self.metadata['windows'][wid]['variables'].append('p')
-
+        self.metadata['windows'][wid]['database'] = path
+        self.metadata['windows'][wid]['id'] = id
+        self.metadata['windows'][wid]['cycle'] = cycle
+        self.metadata['windows'][wid]['cycles'] = cycles
+        self.metadata['windows'][wid]['ncycles'] = len(cycles)
+        self.metadata['windows'][wid]['times'] = times
+        self.metadata['windows'][wid]['variables'] = vars
 
 
     def cycle(self, c):
         """
         Changing the snapshot to a given cycle index
         """
-        if not self.window_is_drawn():
+        if not self.is_window_drawn():
             raise RuntimeWarning('Window is not drawn!')
             return
 
@@ -201,7 +132,7 @@ class VisItAPI:
 
     def pseudocolor_try_colortables(self, sleep=1.5):
         """Trying all available colorTables on an **already drawn** plot"""
-        if not self.window_is_drawn():
+        if not self.is_window_drawn():
             raise RuntimeWarning('Window is not drawn!')
             return
 
@@ -458,7 +389,7 @@ class VisItAPI:
         return visit.GetGlobalAttributes().windows
 
 
-    def window_is_drawn(self):
+    def is_window_drawn(self):
         wid = self.active_window_id()
 
         if self.metadata['windows'][wid]['drawn']:

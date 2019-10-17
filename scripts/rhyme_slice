@@ -4,11 +4,7 @@ import argparse
 import sys, os, glob, re
 
 
-DS = {
-    'path': '',
-    'ncycles': 0,
-    'current_cycle': 0,
-}
+DS = { 'ncycles': 0, 'current_cycle': 0, }
 
 
 def set_current_cycle(n):
@@ -134,22 +130,15 @@ def main():
     axis_type = 'ZAxis' if args.axis == 'z' else ('YAxis' if args.axis == 'y' else 'XAxis')
 
 
-    matches = re.findall('[0-9]{5}', args.chombo_path)
-
-    if len(matches) < 1:
-        DS['path'] = args.chombo_path
-        DS['ncycles'] = 1
-    else:
-        DS['path'] = os.path.splitext(args.chombo_path.replace(matches[-1], '*'))[0]
-        DS['ncycles'] = len(glob.glob(args.chombo_path.replace(matches[-1], '*')))
-
-
     v = Vis()
-    v.open(DS['path'])
+    v.open(args.chombo_path)
     v.pseudocolor(args.var, scaling=args.scaling, zmin=args.min, zmax=args.max,
         ct=args.colortable, invert_ct=args.invert)
     v.slice(origin_type='Percent', val=args.percent, axis_type=axis_type)
     v.draw()
+
+    wid = v.active_window_id()
+    DS['ncycles'] = v.metadata['windows'][wid]['ncycles']
 
 
     if len(args.commands) > 0:
