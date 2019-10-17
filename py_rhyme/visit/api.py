@@ -1,14 +1,13 @@
 import time, copy, os
 from .helpers.pseudocolor_plot_helper import pseudocolor_plot_attr, \
-    is_pseudocolor_plot, set_pseudocolor_plot_colortable, \
-    set_pseudocolor_plot_variable, set_pseudocolor_plot_colortable
+    is_pseudocolor_plot, set_pseudocolor_plot_colortable
 from .helpers.curve_plot_helper import curve_plot_attr, is_curve_plot, \
     set_curve_plot_variable
 from .helpers.slice_operator_helper import slice_operator_attr, \
     is_slice_operator
 from .helpers.draw_plots_helper import draw_plots_attr
 from .helpers.line_helper import new_line
-from .helpers._database_helper import _open_database, _change_state
+from .helpers.database_helper import _open_database, _change_state
 from .helpers.metadata_helper import _generate_metadata
 
 try:
@@ -36,41 +35,30 @@ class VisItAPI:
         visit.SetTreatAllDBsAsTimeVarying(1)
         visit.SetQueryOutputToObject()
 
-        self.metadata = self.METADATA
-        self.metadata['windows'].append(self._new_window_object())
-
 
     def open(self, path):
         """
         Parameter
         path: path to a rhyme output file
         """
-        path, id, cycle, cycles, times, vars = _open_database(path)
-
-        wid = self.active_window_id()
-        self.metadata['windows'][wid]['database'] = path
-        self.metadata['windows'][wid]['id'] = id
-        self.metadata['windows'][wid]['cycle'] = cycle
-        self.metadata['windows'][wid]['cycles'] = cycles
-        self.metadata['windows'][wid]['ncycles'] = len(cycles)
-        self.metadata['windows'][wid]['times'] = times
-        self.metadata['windows'][wid]['variables'] = vars
-
+        _open_database(path)
 
     def cycle(self, c):
         _change_state(c)
-        self.metadata['windows'][self.active_window_id()]['cycle'] = c
-
 
     def next_cycle(self):
         visit.TimeSliderNextState()
-        self.metadata['windows'][self.active_window_id()]['cycle'] += 1
-
 
     def prev_cycle(self):
         visit.TimeSliderPreviousState()
-        self.metadata['windows'][self.active_window_id()]['cycle'] -= 1
 
+    def ncycles(self):
+        info = visit.GetWindowInformation()
+        return len(visit.GetMetaData(info.activeSource).cycles)
+
+    def current_cycle(self):
+        info = visit.GetWindowInformation()
+        return info.timeSliderCurrentStates[info.activeTimeSlider]
 
     def time(self, t):
         """
@@ -79,21 +67,19 @@ class VisItAPI:
         NB: We assme the list of times is not sorted!
         """
         wid = self.active_window_id()
-        diff = [abs(t - time) for time in self.metadata['windows'][wid]['times']]
+        md = self.generate_metadata()
+        diff = [abs(t - time) for time in md['windows'][wid]['times']]
         cycle = diff.index(min(diff))
 
         self.cycle(cycle)
 
-
     def active_window_id(self):
         ga = visit.GetGlobalAttributes()
-        return ga.activeWindow
-
+        return ga.windows[ga.activeWindow]
 
     def active_window(self):
         ga = visit.GetGlobalAttributes()
         return ga.windows[ga.activeWindow]
-
 
     def windows(self):
         return visit.GetGlobalAttributes().windows
@@ -111,21 +97,14 @@ class VisItAPI:
         if visit.AddPlot( 'Pseudocolor', var, 1, 1 ) != 1:
             raise RuntimeWarning('Unable to add Pseudocolor plot.')
 
-        psa, pso = pseudocolor_plot_attr(var, scaling, zmin, zmax, ct, invert_ct)
+        psa = pseudocolor_plot_attr(var, scaling, zmin, zmax, ct, invert_ct)
         visit.SetPlotOptions(psa)
-
-        wid = self.active_window_id()
-        self.metadata['windows'][wid]['plots'].append(pso)
-        set_pseudocolor_plot_variable( self.metadata['windows'][wid]['plots'][-1], var)
 
 
     def pseudocolor_try_colortables(self, sleep=1.5):
         """Trying all available colorTables on an **already drawn** plot"""
-        if not self.is_window_drawn():
-            raise RuntimeWarning('Window is not drawn!')
-
-        pid = pseudocolor_plotid(self.active_window_id())
-        orig = self.metadata['windows'][wid]['plots'][pid]
+        md = self.generate_metadata()
+        orig = self.find_pseudocolor(md['windows'][self.active_window_id]['plots'])
 
         for ct in visit.ColorTableNames():
             for invert in (0, 1):
@@ -138,32 +117,27 @@ class VisItAPI:
 
     def pseudocolor_colortable(self, ct):
         """Changing a pseudocolor plot color table"""
-        wid = self.active_window_id()
-        pid = pseudocolor_plotid(wid)
+        md = self.generate_metadata()
+        plot = self.find_pseudocolor(md['windows'][self.active_window_id]['plots'])
 
-        if pid < 0:
+        if not plot:
             raise RuntimeError('No pseudocolor found in this window!')
 
         if ct not in visit.ColorTableNames():
             raise RuntimeError('Color table not found!')
 
-        p = visit.PseudocolorAttributes()
-        p.colorTableName = ct
-        visit.SetPlotOptions(p)
-
-        set_pseudocolor_plot_colortable(
-            self.metadata['windows'][wid]['plots'][pid], ct)
+        set_pseudocolor_plot_colortable(ct, plot['scaling'], plot['invert_ct'])
 
 
-    def pseudocolor_plotid(wid):
-        for i, plot in enumerate(self.metadata['windows'][wid]['plots']):
+    def find_pseudocolor(self, plots):
+        for plot in plots:
             if is_pseudocolor_plot(plot):
-                return i
+                return plot
 
-        return -1
+        return None
 
 
-    def slice(self, origin_type='Percent', val=50, axis_type='ZAxis'):
+    def slice(self, origin_type='Percent', percent=50, axis_type='ZAxis'):
         """
         Parameter
         origin_type: Type of slicing (Intercept, Point, Percent, Zone, Node)
@@ -178,12 +152,8 @@ class VisItAPI:
         if visit.AddOperator('Slice', 0) != 1:
             raise RuntimeWarning('Unable to add Slice operator')
 
-        sa, so = slice_operator_attr(origin_type, val, axis_type)
+        sa = slice_operator_attr(origin_type, percent, axis_type)
         visit.SetOperatorOptions(sa)
-
-        wid = self.active_window_id()
-        self.metadata['windows'][wid]['operators'].append(so)
-        self.metadata['windows'][wid]['drawn'] = False
 
 
     def draw(self, xtitle='X', xunit='Mpc', xscale='linear', xmin=None, xmax=None,
@@ -203,55 +173,44 @@ class VisItAPI:
         visit.SetAnnotationAttributes(aa)
         visit.SetView2D(v2da)
 
-        wid = self.active_window_id()
-        self.metadata['windows'][wid]['drawn'] = True
-
 
     def redraw(self, variable=None, scaling=None, zmin=None, zmax=None, ct=None,
-        origin_type=None, val=None, axis_type=None):
+        origin_type=None, percent=None, axis_type=None):
         wid = self.active_window_id()
+        md = self.generate_metadata()
 
-        if len(self.metadata['windows'][wid]['plots']) < 1:
+        if wid not in md['windows'] or len(md['windows'][wid]['plots']) < 1:
             raise RuntimeError('No plots found in this window!')
-
-        plots = copy.deepcopy(self.metadata['windows'][wid]['plots'])
-        operators = copy.deepcopy(self.metadata['windows'][wid]['operators'])
 
         if visit.DeleteActivePlots() != 1:
             raise RuntimeError('Unable to delete mesh plots!')
         if visit.DeleteAllPlots() != 1:
             raise RuntimeError('Unable to delete pseudocolor and contour plots')
 
-        self.metadata['windows'][wid]['plots'] = []
-        self.metadata['windows'][wid]['operators'] = []
-
-        for p in plots:
+        for p in md['windows'][wid]['plots'].values():
             if is_pseudocolor_plot(p):
                 var = p['variable'] if variable is None else variable
                 sc = p['scaling'] if scaling is None else scaling
                 zmn = p['min'] if zmin is None else zmin
                 zmx = p['max'] if zmax is None else zmax
                 ct = p['ct'] if ct is None else ct
+
                 self.pseudocolor(var, scaling=sc, zmin=zmn, zmax=zmx,
                     ct=ct, invert_ct=p['invert_ct'])
-            elif is_curve_plot(p):
-                pass
 
-        for o in operators:
-            if is_slice_operator(o):
-                ot = o['origin_type'] if origin_type is None else origin_type
-                v = o['value'] if val is None else val
-                at = o['axis_type'] if axis_type is None else axis_type
-                self.slice(origin_type=ot, val=v, axis_type=at)
+                for o in p['operators'].values():
+                    if is_slice_operator(o):
+                        ot = o['origin_type'] if origin_type is None else origin_type
+                        p = o['origin_percent'] if percent is None else percent
+                        at = o['axis_type'] if axis_type is None else axis_type
+                        self.slice(origin_type=ot, percent=p, axis_type=at)
 
 
     def change_variable(self, variable):
         self.redraw(variable=variable)
 
-
     def change_scaling(self, scaling):
         self.redraw(scaling=scaling)
-
 
     def change_layer(self, layer, origin_type=None, axis_type=None):
         self.redraw(origin_type=origin_type, val=layer, axis_type=None)
@@ -289,7 +248,7 @@ class VisItAPI:
         if q in queries:
             return visit.Query(q)
         else:
-            raise RuntimeWarning('Invalid query!')
+            raise RuntimeWarning('Invalid query!', q)
 
 
     def query_over_time(self, q='', range_scale='log', domain_scale='linear'):
@@ -330,27 +289,21 @@ class VisItAPI:
         return cmax
 
 
-    def _new_window_object(self):
-        return {
-            'database': '',
-            'variables': [],
-            'cycle': 0,
-            'id': '',
-            'plots': [],
-            'operators': [],
-            'drawn': False,
-            'cycles': [],
-            'times': [],
-        }
+    def raise_exception_if_window_is_not_drawn(self):
+        # wid = self.active_window_id()
+        # if self.metadata['windows'][wid]['drawn']:
+            # return True
+        # else:
+            # return False
+        return True
 
 
-    def is_window_drawn(self):
+    def generate_metadata(self):
         wid = self.active_window_id()
+        md = _generate_metadata()
+        visit.SetActiveWindow(wid)
 
-        if self.metadata['windows'][wid]['drawn']:
-            return True
-        else:
-            return False
+        return md
 
 
     def close(self):

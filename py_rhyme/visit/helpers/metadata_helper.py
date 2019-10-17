@@ -28,7 +28,6 @@ def _generate_metadata():
 
         md = visit.GetMetaData(ds)
         vars = [md.GetScalars(i).name for i in range(md.GetNumScalars())]
-        vars = vars + _new_expressions(vars)
 
         window['database'] = ds
         window['id'] = id
@@ -63,7 +62,7 @@ def _generate_metadata():
 
                 op = visit.GetOperatorOptions(oid)
 
-                operator['name'] = plot_obj.operatorNames[oid]
+                operator['type'] = plot_obj.operatorNames[oid]
                 operator['origin_type'] = op.originType
                 operator['origin_percent'] = op.originPercent
                 operator['axis_type'] = op.axisType

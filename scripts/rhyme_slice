@@ -132,12 +132,12 @@ def main():
     v.open(args.chombo_path)
     v.pseudocolor(args.var, scaling=args.scaling, zmin=args.min, zmax=args.max,
         ct=args.colortable, invert_ct=args.invert)
-    v.slice(origin_type='Percent', val=args.percent, axis_type=axis_type)
+    v.slice(origin_type='Percent', percent=args.percent, axis_type=axis_type)
     v.draw()
 
     wid = v.active_window_id()
-    DS['ncycles'] = v.metadata['windows'][wid]['ncycles']
-
+    DS['ncycles'] = v.ncycles()
+    DS['current_cycle'] = v.current_cycle()
 
     if len(args.commands) > 0:
         commands = args.commands.replace(' ', '').split(',')
