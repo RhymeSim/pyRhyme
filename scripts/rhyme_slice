@@ -8,12 +8,10 @@ DS = { 'ncycles': 0, 'current_cycle': 0, }
 
 
 def set_current_cycle(n):
-    if 0 >= n > DS['ncycles']:
-        DS['current_cycle'] = n
-    elif n < 0:
-        DS['current_cycle'] = n + DS['ncycles']
-    elif n > DS['ncycles']:
-        DS['current_cycle'] = n - DS['ncycles']
+    while n < 0 or n >= DS['ncycles']:
+        n = n + DS['ncycles'] if n < 0 else n - DS['ncycles']
+
+    DS['current_cycle'] = n
 
 
 def play(o, n):
@@ -148,7 +146,6 @@ def main():
 
 
     print('Combine following modes and actions to execute a command:')
-    print(MODES.keys())
     for m in MODES.keys():
         print('%-8s: %s' % (m, MODES[m]['desc']))
         for c in MODES[m]['actions'].keys():

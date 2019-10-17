@@ -1,15 +1,14 @@
 import time, copy, os
 from .helpers.pseudocolor_plot_helper import pseudocolor_plot_attr, \
     is_pseudocolor_plot, set_pseudocolor_plot_colortable, \
-    set_pseudocolor_plot_variable
+    set_pseudocolor_plot_variable, set_pseudocolor_plot_colortable
 from .helpers.curve_plot_helper import curve_plot_attr, is_curve_plot, \
     set_curve_plot_variable
 from .helpers.slice_operator_helper import slice_operator_attr, \
     is_slice_operator
 from .helpers.draw_plots_helper import draw_plots_attr
 from .helpers.line_helper import new_line
-
-from ._database_handler import _open_database
+from .helpers._database_helper import _open_database, _change_state
 
 try:
     import visit
@@ -48,6 +47,10 @@ class VisItAPI:
 
 
     def open(self, path):
+        """
+        Parameter
+        path: path to a rhyme output file
+        """
         path, id, cycle, cycles, times, vars = _open_database(path)
 
         wid = self.active_window_id()
@@ -61,31 +64,18 @@ class VisItAPI:
 
 
     def cycle(self, c):
-        """
-        Changing the snapshot to a given cycle index
-        """
-        if not self.is_window_drawn():
-            raise RuntimeWarning('Window is not drawn!')
-            return
-
-        n_cycles = visit.GetDatabaseNStates()
-
-        if not 0 <= c < n_cycles:
-            raise RuntimeWarning('Out of range of cycles!', c, ' out of ', n_cycles)
-
-        if visit.SetTimeSliderState(c) != 1:
-            raise RuntimeWarning('Unable to change database state to:', c)
-
-        wid = self.active_window_id()
-        self.metadata['windows'][wid]['cycle'] = c
+        _change_state(c)
+        self.metadata['windows'][self.active_window_id()]['cycle'] = c
 
 
     def next_cycle(self):
         visit.TimeSliderNextState()
+        self.metadata['windows'][self.active_window_id()]['cycle'] += 1
 
 
     def prev_cycle(self):
         visit.TimeSliderPreviousState()
+        self.metadata['windows'][self.active_window_id()]['cycle'] -= 1
 
 
     def time(self, t):
@@ -96,27 +86,33 @@ class VisItAPI:
         """
         wid = self.active_window_id()
         diff = [abs(t - time) for time in self.metadata['windows'][wid]['times']]
-
         cycle = diff.index(min(diff))
 
         self.cycle(cycle)
 
 
+    def active_window_id(self):
+        ga = visit.GetGlobalAttributes()
+        return ga.activeWindow
+
+
+    def active_window(self):
+        ga = visit.GetGlobalAttributes()
+        return ga.windows[ga.activeWindow]
+
+
+    def windows(self):
+        return visit.GetGlobalAttributes().windows
+
+
     def pseudocolor(self, var, scaling='log', zmin=None, zmax=None,
         ct='RdYlBu', invert_ct=0):
         """
-        Adding a Pseudocolor plot
-
         Parameter
         var: Variable to be plotted
         scaling: log, linear
-        ct: Name of color table to be used
-        invert_ct: If 1, colors will be inverted
-
-        TODO
-        if var is all, plot all variables:
-            SetActivePlots((0,1,2))
-        GetNumPlots()
+        ct: Name of the color table to be used
+        invert_ct: If 1, color table will be inverted
         """
         if visit.AddPlot( 'Pseudocolor', var, 1, 1 ) != 1:
             raise RuntimeWarning('Unable to add Pseudocolor plot.')
@@ -126,37 +122,24 @@ class VisItAPI:
 
         wid = self.active_window_id()
         self.metadata['windows'][wid]['plots'].append(pso)
-        set_pseudocolor_plot_variable(
-            self.metadata['windows'][wid]['plots'][-1], var)
+        set_pseudocolor_plot_variable( self.metadata['windows'][wid]['plots'][-1], var)
 
 
     def pseudocolor_try_colortables(self, sleep=1.5):
         """Trying all available colorTables on an **already drawn** plot"""
         if not self.is_window_drawn():
             raise RuntimeWarning('Window is not drawn!')
-            return
 
-        p = visit.PseudocolorAttributes()
-
-        ct_orig = visit.GetActiveContinuousColorTable()
-        invrt_orig = p.invertColorTable
-        scaling_orig = p.scaling
+        pid = pseudocolor_plotid(self.active_window_id())
+        orig = self.metadata['windows'][wid]['plots'][pid]
 
         for ct in visit.ColorTableNames():
-            for invrt in (0, 1):
-                print('Trying:', ct, 'invert', invrt)
-
-                p.colorTableName = ct
-                p.invertColorTable = invrt
-                p.scaling = scaling_orig
-                visit.SetPlotOptions(p)
-
+            for invert in (0, 1):
+                print('Trying:', ct, 'invert', invert)
+                set_pseudocolor_plot_colortable(ct, orig['scaling'], invert)
                 time.sleep(sleep)
 
-        p.colorTableName = ct_orig
-        p.invertColorTable = invrt_orig
-        p.scaling = scaling_orig
-        visit.SetPlotOptions(p)
+        set_pseudocolor_plot_colortable(orig['ct'], orig['scaling'], orig['invert_ct'])
 
 
     def pseudocolor_colortable(self, ct):
@@ -186,12 +169,9 @@ class VisItAPI:
         return -1
 
 
-    def slice(self, origin_type='Percent', val=50, axis_type='ZAxis', all=1):
+    def slice(self, origin_type='Percent', val=50, axis_type='ZAxis'):
         """
-        Adding a slice operator
-
         Parameter
-        all: If 1, the operator will be applied to all plots
         origin_type: Type of slicing (Intercept, Point, Percent, Zone, Node)
         val: Argument of origin,
             Intercept: <Number>
@@ -201,7 +181,7 @@ class VisItAPI:
             Node: <Number>
         axis_type: XAxis, YAxis, ZAxis
         """
-        if visit.AddOperator('Slice', all) != 1:
+        if visit.AddOperator('Slice', 1) != 1:
             raise RuntimeWarning('Unable to add Slice operator')
 
         sa, so = slice_operator_attr(origin_type, val, axis_type)
@@ -303,11 +283,6 @@ class VisItAPI:
         ao = new_line(p1, p2, width, color, opacity, begin_arrow, end_arrow)
 
 
-    def invert(self):
-        """Inverting background and foreground colors"""
-        visit.InvertBackgroundColor()
-
-
     def query(self, q=''):
         """
         Run a Query
@@ -332,11 +307,11 @@ class VisItAPI:
             if visit.QueryOverTime(q) != 1:
                 raise RuntimeWarning('Unable to run the query_over_time:', q)
 
-            window_id = visit.GetQueryOverTimeAttributes().windowId
-            visit.SetActiveWindow(window_id)
+            wid = self.active_window_id()
+            visit.SetActiveWindow(wid)
 
             pi = visit.GetPlotInformation()
-            pi['windowId'] = window_id
+            pi['windowId'] = wid
 
             visit.SetActiveWindow(aw)
             return pi
@@ -373,20 +348,6 @@ class VisItAPI:
             'cycles': [],
             'times': [],
         }
-
-
-    def active_window_id(self):
-        ga = visit.GetGlobalAttributes()
-        return ga.activeWindow
-
-
-    def active_window(self):
-        ga = visit.GetGlobalAttributes()
-        return ga.windows[ga.activeWindow]
-
-
-    def windows(self):
-        return visit.GetGlobalAttributes().windows
 
 
     def is_window_drawn(self):

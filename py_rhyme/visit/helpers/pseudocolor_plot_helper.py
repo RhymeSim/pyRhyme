@@ -44,6 +44,20 @@ def pseudocolor_plot_colortable():
     pass
 
 
+def pseudocolor_plot_colortables():
+    """Returns all available colortables"""
+    return visit.ColorTableNames()
+
+
+def set_pseudocolor_plot_colortable(ct, scaling, invert=0):
+    p = visit.PseudocolorAttributes()
+    p.colorTableName = ct
+    p.scaling = scaling
+    p.invertColorTable = invert
+    visit.SetPlotOptions(p)
+
+
+
 def is_pseudocolor_plot(plot_obj):
     """
     Return True if the object is a pseudocolor object

@@ -40,6 +40,19 @@ def _open_database(chombo_path):
     return path, id, cycle, md.cycles, md.times, vars
 
 
+def _change_state(state):
+    nstates = visit.GetDatabaseNStates()
+
+    while state < 0 or state >= nstates:
+        if state < 0:
+            state += nstates
+        elif state >= nstates:
+            state -= nstates
+
+    if visit.SetTimeSliderState(state) != 1:
+        raise RuntimeWarning('Unable to change database state to:', state)
+
+
 def __new_expressions(vars):
     extra_vars = []
 
