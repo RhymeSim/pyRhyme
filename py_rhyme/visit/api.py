@@ -9,6 +9,7 @@ from .helpers.draw_plots_helper import draw_plots_attr
 from .helpers.line_helper import new_line
 from .helpers.database_helper import _open_database, _change_state
 from .helpers.metadata_helper import _generate_metadata
+from .helpers.lineout_operator_helper import lineout_operator_attr
 
 try:
     import visit
@@ -84,6 +85,10 @@ class VisItAPI:
     def windows(self):
         return visit.GetGlobalAttributes().windows
 
+    def new_window(self):
+        if visit.AddWindow() != 1:
+            raise RuntimeWarning('Unable to create a new window!')
+
 
     def pseudocolor(self, var, scaling='log', zmin=None, zmax=None,
         ct='RdYlBu', invert_ct=0):
@@ -141,7 +146,7 @@ class VisItAPI:
         """
         Parameter
         origin_type: Type of slicing (Intercept, Point, Percent, Zone, Node)
-        val: Argument of origin,
+        percent: Argument of origin,
             Intercept: <Number>
             Point: <list Number, Number, Number>
             Percent: <Number>
@@ -154,6 +159,15 @@ class VisItAPI:
 
         sa = slice_operator_attr(origin_type, percent, axis_type)
         visit.SetOperatorOptions(sa)
+
+
+    def lineout(self, variable, point1, point2):
+        if visit.AddPlot('Curve', 'operators/Lineout/' + variable, 1, 1) != 1:
+            raise RuntimeWarning('Unable to plot lineout!', variable)
+
+        la, ca = lineout_operator_attr(point1, point2)
+        visit.SetOperatorOptions(la)
+        visit.SetPlotOptions(ca)
 
 
     def draw(self, xtitle='X', xunit='Mpc', xscale='linear', xmin=None, xmax=None,
@@ -204,17 +218,7 @@ class VisItAPI:
                         p = o['origin_percent'] if percent is None else percent
                         at = o['axis_type'] if axis_type is None else axis_type
                         self.slice(origin_type=ot, percent=p, axis_type=at)
-
-
-    def change_variable(self, variable):
-        self.redraw(variable=variable)
-
-    def change_scaling(self, scaling):
-        self.redraw(scaling=scaling)
-
-    def change_layer(self, layer, origin_type=None, axis_type=None):
-        self.redraw(origin_type=origin_type, val=layer, axis_type=None)
-
+        
 
     def line(self, p1=(0.75, 0.75), p2=(0.75, 0.75), width=1,
         color=(0, 0, 0, 255), opacity=255, begin_arrow=0, end_arrow=0):

@@ -1,110 +1,7 @@
 #!/usr/bin/env python
 from py_rhyme.visit import VisItAPI as Vis
+from py_rhyme.visit.script_helper import InlineCombination
 import argparse
-import sys, os, glob, re
-
-
-DS = { 'ncycles': 0, 'current_cycle': 0, }
-
-
-def set_current_cycle(n):
-    while n < 0 or n >= DS['ncycles']:
-        n = n + DS['ncycles'] if n < 0 else n - DS['ncycles']
-
-    DS['current_cycle'] = n
-
-
-def play(o, n):
-    if len(str(n)) > 0:
-        to_cycle = DS['current_cycle'] + int(n)
-    else:
-        to_cycle = DS['ncycles']
-
-    for i in range(DS['current_cycle'], to_cycle):
-        o.cycle(i)
-
-
-MODES = {
-    'x': { 'desc': 'Command mode', 'actions': {
-        'q': { 'desc': 'quit', 'ex': 'xq',
-            'run': lambda o, _: sys.exit(0)
-        },
-    }},
-    'p': { 'desc': 'Plot mode', 'actions': {
-        'd': { 'desc': 'draw', 'ex': 'pd',
-            'run': lambda o, _: o.draw()
-        },
-        's': { 'desc': 'change scaling', 'ex': 'pslinear',
-            'run': lambda o, s: o.change_scaling(str(s)),
-            'after': lambda o, _: o.draw()
-        },
-        'v': { 'desc': 'change variable', 'ex': 'pvrho_u',
-            'run': lambda o, v: o.change_variable(str(v)),
-            'after': lambda o, _: o.draw()
-        },
-    }},
-    's': { 'desc': 'Slice mode', 'actions': {
-        'l': { 'desc': 'change layer (%)', 'ex': 'sl25',
-            'run': lambda o, l: o.change_layer(int(l)),
-            'after': lambda o, _: o.draw(),
-        }
-    }},
-    't': { 'desc': 'Time mode', 'actions': {
-        't': { 'desc': 'find snapshot with closes time', 'ex': 'tt16.5',
-            'run': lambda o, t: o.time(float(t)),
-        },
-    }},
-    'c': { 'desc': 'Cycle mode', 'actions': {
-        'n': { 'desc': 'change cycle', 'ex': 'cn25',
-            'run': lambda o, n: o.cycle(int(n)),
-            'after': lambda o, n: set_current_cycle(int(n))
-        },
-        'j': { 'desc': 'previous cycle', 'ex': 'cj',
-            'run': lambda o, _: o.prev_cycle(),
-            'after': lambda o, n: set_current_cycle(DS['current_cycle'] - 1)
-        },
-        'k': { 'desc': 'next cycle', 'ex': 'ck',
-            'run': lambda o, _: o.next_cycle(),
-            'after': lambda o, n:  set_current_cycle(DS['current_cycle'] + 1)
-        },
-        'p': { 'desc': 'play', 'ex': 'cp, cp10',
-            'run': lambda o, l: play(o, l),
-            'after': lambda o, _: o.cycle(DS['current_cycle'])
-        },
-    }},
-}
-
-
-def handle_commands(v, command):
-    if len(command) < 2:
-        print('Wrong command combination!', command)
-        return
-
-    mode = command[0]
-    action = command[1]
-    value = command[2:] if len(command) > 2 else ''
-
-    if mode not in MODES:
-        print('Unknonw mode:', mode)
-        return
-
-    if action not in MODES[mode]['actions']:
-        print('Unknown action', action, 'in', mode, 'mode')
-        return
-
-    if 'before' in MODES[mode]['actions'][action]:
-        MODES[mode]['actions'][action]['before'](v, value)
-
-    MODES[mode]['actions'][action]['run'](v, value)
-
-    if 'after' in MODES[mode]['actions'][action]:
-        MODES[mode]['actions'][action]['after'](v, value)
-
-
-def inline_commands(v):
-    while True:
-        command = str(sys.stdin.readline().replace('\n', ''))
-        handle_commands(v, command)
 
 
 def main():
@@ -135,23 +32,26 @@ def main():
     v.slice(origin_type='Percent', percent=args.percent, axis_type=axis_type)
     v.draw()
 
-    wid = v.active_window_id()
-    DS['ncycles'] = v.ncycles()
-    DS['current_cycle'] = v.current_cycle()
+    combs = InlineCombination(v.current_cycle(), v.ncycles())
+
+    combs.mode('p', 'Plot mode')
+    combs.action('p', 'd', 'draw', 'pd', lambda v, _: v.draw())
+    combs.action('p', 's', 'change scaling', 'pslinear', lambda v, s: v.redraw(scaling=str(s)), after=lambda v, _: v.draw())
+    combs.action('p', 'v', 'change variable', 'pve_tot', lambda o, v: o.redraw(variable=str(v)), after=lambda v, _: v.draw())
+    combs.action('p', 'u', 'set range upper bound', 'pu3.14e5', lambda v, u: o.redraw(zmax=float(u)), after=lambda v, _: v.draw())
+    combs.action('p', 'u', 'set range lower bound', 'pl3.14e5', lambda v, l: o.redraw(zmin=float(l)), after=lambda v, _: v.draw())
+
+    combs.mode('s', 'Slice mode')
+    combs.action('s', 'l', 'change layer (%)', 'sl25', lambda v, l: v.redraw(percent=int(l)), after=lambda v, _: v.draw())
+
 
     if len(args.commands) > 0:
         commands = args.commands.replace(' ', '').split(',')
         for command in commands:
-            handle_commands(v, command)
+            self.handle(v, command)
 
 
-    print('Combine following modes and actions to execute a command:')
-    for m in MODES.keys():
-        print('%-8s: %s' % (m, MODES[m]['desc']))
-        for c in MODES[m]['actions'].keys():
-            print('-%-7s: %-40s e.g. %s' % (c, MODES[m]['actions'][c]['desc'], MODES[m]['actions'][c]['ex']))
-
-    inline_commands(v)
+    combs.wait(v)
 
 
 if __name__ == '__main__':
