@@ -1,5 +1,4 @@
 import os
-from ._database_helper import _new_expressions
 
 
 try:
@@ -8,7 +7,7 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-def _generate_metadata():
+def _generate():
     metadata = { 'windows': {} }
 
     windows = visit.GetGlobalAttributes().windows

@@ -4,7 +4,7 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-def new_line(p1, p2, w, c, o, ba, ea):
+def _attr(p1, p2, w, c, o, ba, ea):
     """
     Parameter
     p1, p2: Begin/end points

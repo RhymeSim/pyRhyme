@@ -4,7 +4,7 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-def slice_operator_attr(ot, v, at):
+def _attr(ot, v, at):
     """
     Parameter
     ot: OriginType
@@ -31,8 +31,5 @@ def slice_operator_attr(ot, v, at):
     return sa
 
 
-def is_slice_operator(op_obj):
-    if 'type' in op_obj and op_obj['type'] == 'Slice':
-        return True
-    else:
-        return False
+def _check(op_obj):
+    return True if 'type' in op_obj and op_obj['type'] == 'Slice' else False

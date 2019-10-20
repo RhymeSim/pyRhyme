@@ -49,7 +49,7 @@ class InlineCombination():
 
 
     def play_cycles(self, vis, ncycles_str=''):
-        if len(ncycles_str) > 0:
+        if ncycles_str:
             to_cycle = self.cycle + int(ncycles_str)
         else:
             to_cycle = self.ncycles

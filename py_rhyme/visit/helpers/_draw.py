@@ -4,7 +4,7 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-def draw_plots_attr(xt, xu, xs, xn, xx, yt, yu, ys, yn, yx, c, bg, fg, se):
+def _attr(xt, xu, xs, xn, xx, yt, yu, ys, yn, yx, c, bg, fg, se):
     """
     Parameter
     xt: xtitle

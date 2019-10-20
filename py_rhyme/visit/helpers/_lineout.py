@@ -4,7 +4,7 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-def lineout_operator_attr(p1, p2, ls='solid'):
+def _attr(p1, p2, ls='solid'):
     """
     Parameter
     p1, p2: normalized (0 <= p1 <= 1) positions

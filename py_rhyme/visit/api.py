@@ -1,15 +1,12 @@
 import time, copy, os
-from .helpers.pseudocolor_plot_helper import pseudocolor_plot_attr, \
-    is_pseudocolor_plot, set_pseudocolor_plot_colortable
-from .helpers.curve_plot_helper import curve_plot_attr, is_curve_plot, \
-    set_curve_plot_variable
-from .helpers.slice_operator_helper import slice_operator_attr, \
-    is_slice_operator
-from .helpers.draw_plots_helper import draw_plots_attr
-from .helpers.line_helper import new_line
-from .helpers.database_helper import _open_database, _change_state
-from .helpers.metadata_helper import _generate_metadata
-from .helpers.lineout_operator_helper import lineout_operator_attr
+from .helpers import _pseudocolor
+from .helpers import _curve_plot
+from .helpers import _slice
+from .helpers import _draw
+from .helpers import _line
+from .helpers import _database
+from .helpers import _metadata
+from .helpers import _lineout
 
 try:
     import visit
@@ -38,14 +35,10 @@ class VisItAPI:
 
 
     def open(self, path):
-        """
-        Parameter
-        path: path to a rhyme output file
-        """
-        _open_database(path)
+        _database._open(path)
 
     def cycle(self, c):
-        _change_state(c)
+        _database._change_state(c)
 
     def next_cycle(self):
         visit.TimeSliderNextState()
@@ -102,7 +95,7 @@ class VisItAPI:
         if visit.AddPlot( 'Pseudocolor', var, 1, 1 ) != 1:
             raise RuntimeWarning('Unable to add Pseudocolor plot.')
 
-        psa = pseudocolor_plot_attr(var, scaling, zmin, zmax, ct, invert_ct)
+        psa = _pseudocolor._attr(var, scaling, zmin, zmax, ct, invert_ct)
         visit.SetPlotOptions(psa)
 
 
@@ -114,10 +107,10 @@ class VisItAPI:
         for ct in visit.ColorTableNames():
             for invert in (0, 1):
                 print('Trying:', ct, 'invert', invert)
-                set_pseudocolor_plot_colortable(ct, orig['scaling'], invert)
+                _pseudocolor._set_colortable(ct, orig['scaling'], invert)
                 time.sleep(sleep)
 
-        set_pseudocolor_plot_colortable(orig['ct'], orig['scaling'], orig['invert_ct'])
+        _pseudocolor._set_colortable(orig['ct'], orig['scaling'], orig['invert_ct'])
 
 
     def pseudocolor_colortable(self, ct):
@@ -131,12 +124,12 @@ class VisItAPI:
         if ct not in visit.ColorTableNames():
             raise RuntimeError('Color table not found!')
 
-        set_pseudocolor_plot_colortable(ct, plot['scaling'], plot['invert_ct'])
+        _pseudocolor._set_colortable(ct, plot['scaling'], plot['invert_ct'])
 
 
     def find_pseudocolor(self, plots):
         for plot in plots:
-            if is_pseudocolor_plot(plot):
+            if _pseudocolor._check(plot):
                 return plot
 
         return None
@@ -157,7 +150,7 @@ class VisItAPI:
         if visit.AddOperator('Slice', 0) != 1:
             raise RuntimeWarning('Unable to add Slice operator')
 
-        sa = slice_operator_attr(origin_type, percent, axis_type)
+        sa = _slice._attr(origin_type, percent, axis_type)
         visit.SetOperatorOptions(sa)
 
 
@@ -165,7 +158,7 @@ class VisItAPI:
         if visit.AddPlot('Curve', 'operators/Lineout/' + variable, 1, 1) != 1:
             raise RuntimeWarning('Unable to plot lineout!', variable)
 
-        la, ca = lineout_operator_attr(point1, point2)
+        la, ca = _lineout._attr(point1, point2)
         visit.SetOperatorOptions(la)
         visit.SetPlotOptions(ca)
 
@@ -181,7 +174,7 @@ class VisItAPI:
 
         se = self.query('SpatialExtents')['extents']
 
-        aa, v2da = draw_plots_attr(xtitle, xunit, xscale, xmin, xmax,
+        aa, v2da = _draw._attr(xtitle, xunit, xscale, xmin, xmax,
         ytitle, yunit, yscale, ymin, ymax, color, bg, fg, se)
 
         visit.SetAnnotationAttributes(aa)
@@ -202,7 +195,7 @@ class VisItAPI:
             raise RuntimeError('Unable to delete pseudocolor and contour plots')
 
         for p in md['windows'][wid]['plots'].values():
-            if is_pseudocolor_plot(p):
+            if _pseudocolor._check(p):
                 var = p['variable'] if variable is None else variable
                 sc = p['scaling'] if scaling is None else scaling
                 zmn = p['min'] if zmin is None else zmin
@@ -213,12 +206,12 @@ class VisItAPI:
                     ct=ct, invert_ct=p['invert_ct'])
 
                 for o in p['operators'].values():
-                    if is_slice_operator(o):
+                    if _slice._check(o):
                         ot = o['origin_type'] if origin_type is None else origin_type
                         p = o['origin_percent'] if percent is None else percent
                         at = o['axis_type'] if axis_type is None else axis_type
                         self.slice(origin_type=ot, percent=p, axis_type=at)
-        
+
 
     def line(self, p1=(0.75, 0.75), p2=(0.75, 0.75), width=1,
         color=(0, 0, 0, 255), opacity=255, begin_arrow=0, end_arrow=0):
@@ -304,7 +297,7 @@ class VisItAPI:
 
     def generate_metadata(self):
         wid = self.active_window_id()
-        md = _generate_metadata()
+        md = _metadata._generate()
         visit.SetActiveWindow(wid)
 
         return md

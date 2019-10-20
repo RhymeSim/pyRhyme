@@ -7,7 +7,7 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-def _open_database(chombo_path):
+def _open(chombo_path):
     """
     Opening a chombo database (or file) based on a given path to a chombo file
     """
@@ -31,7 +31,7 @@ def _open_database(chombo_path):
     for i in range(md.GetNumScalars()):
         vars.append(md.GetScalars(i).name)
 
-    _new_expressions(vars)
+    _expressions(vars)
 
 
 def _change_state(state):
@@ -47,7 +47,7 @@ def _change_state(state):
         raise RuntimeWarning('Unable to change database state to:', state)
 
 
-def _new_expressions(vars):
+def _expressions(vars):
     if 'rho' not in vars:
         return
 

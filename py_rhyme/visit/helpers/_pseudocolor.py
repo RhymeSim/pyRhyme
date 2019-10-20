@@ -4,7 +4,7 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-def pseudocolor_plot_attr(variable, scaling, zmin, zmax, ct, invert_ct):
+def _attr(variable, scaling, zmin, zmax, ct, invert_ct):
     """
     Creating pseudocolor objects
     """
@@ -30,7 +30,7 @@ def pseudocolor_plot_attr(variable, scaling, zmin, zmax, ct, invert_ct):
     return psa
 
 
-def pseudocolor_plot_colortable():
+def _colortable():
     """
     Make a color table based on the histogram of data
     check this: https://www.visitusers.org/index.php?title=Creating_a_color_table
@@ -39,7 +39,7 @@ def pseudocolor_plot_colortable():
     pass
 
 
-def set_pseudocolor_plot_colortable(ct, scaling, invert=0):
+def _set_colortable(ct, scaling, invert=0):
     p = visit.PseudocolorAttributes()
     p.colorTableName = ct
     p.scaling = scaling
@@ -48,11 +48,5 @@ def set_pseudocolor_plot_colortable(ct, scaling, invert=0):
 
 
 
-def is_pseudocolor_plot(plot_obj):
-    """
-    Return True if the object is a pseudocolor object
-    """
-    if 'type' in plot_obj and plot_obj['type'] == 'Pseudocolor':
-        return True
-    else:
-        return False
+def _check(plot_obj):
+    return True if 'type' in plot_obj and plot_obj['type'] == 'Pseudocolor' else False
