@@ -1,4 +1,10 @@
 import sys
+from pprint import pprint
+
+try:
+    from visit import *
+except ImportError:
+    raise RuntimeError('Unable to import VisIt!')
 
 
 class InlineCombination():
@@ -11,31 +17,47 @@ class InlineCombination():
 
         self.modes = {
             'x': { 'desc': 'Command mode', 'actions': {
-                'q': { 'desc': 'quit', 'ex': 'xq',
-                    'run': lambda v, _: sys.exit(0)
+                'q': { 'desc': 'Quit', 'ex': 'xq',
+                    'run': lambda v, _: sys.exit(0),
+                },
+                'r': { 'desc': 'Run a VisIt command', 'ex': 'xrExpressions()',
+                    'run': lambda v, c: self.try_run_a_visit_command(c),
+                },
+            }},
+            'h': { 'desc': 'Help mode', 'actions': {
+                'u': { 'desc': 'Print usage', 'ex': 'hu',
+                    'run': lambda v, _: self.usage(),
+                },
+            }},
+            'i': { 'desc': 'Info mode', 'actions': {
+                'a': { 'desc': 'All windows', 'ex': 'ia',
+                    'run': lambda v, _: v.get_metadata(print_it=True),
+                },
+                'w': { 'desc': 'Current woindow', 'ex': 'iw, iwcycle',
+                    'run': lambda v, k: v.get_window_metadata(print_it=True, key=k),
                 },
             }},
             't': { 'desc': 'Time mode', 'actions': {
-                't': { 'desc': 'find snapshot with closes time', 'ex': 'tt16.5',
+                't': { 'desc': 'Find snapshot with closes time', 'ex': 'tt16.5',
                     'run': lambda v, t: v.time(float(t)),
                 },
             }},
             'c': { 'desc': 'Cycle mode', 'actions': {
-                'n': { 'desc': 'change cycle', 'ex': 'cn25',
+                'n': { 'desc': 'Change cycle', 'ex': 'cn25',
                     'run': lambda v, n: v.cycle(int(n)),
-                    'after': lambda v, n: self.set_cycle(int(n))
+                    'after': lambda v, n: self.set_cycle(int(n)),
                 },
-                'j': { 'desc': 'previous cycle', 'ex': 'cj',
+                'j': { 'desc': 'Previous cycle', 'ex': 'cj',
                     'run': lambda v, _: v.prev_cycle(),
-                    'after': lambda v, n: self.set_cycle(self.cycle - 1)
+                    'after': lambda v, n: self.set_cycle(self.cycle - 1),
                 },
-                'k': { 'desc': 'next cycle', 'ex': 'ck',
+                'k': { 'desc': 'Next cycle', 'ex': 'ck',
                     'run': lambda v, _: v.next_cycle(),
-                    'after': lambda v, n:  self.set_cycle(self.cycle + 1)
+                    'after': lambda v, n:  self.set_cycle(self.cycle + 1),
                 },
-                'p': { 'desc': 'play', 'ex': 'cp, cp10',
+                'p': { 'desc': 'Play', 'ex': 'cp, cp10',
                     'run': lambda v, l: self.play_cycles(v, l),
-                    'after': lambda v, _: v.cycle(self.cycle)
+                    'after': lambda v, _: v.cycle(self.cycle),
                 },
             }},
         }
@@ -96,7 +118,8 @@ class InlineCombination():
 
     def handle(self, vis, command_str):
         if len(command_str) < 2:
-            raise RuntimeError('Wrong command combination format!', command_str)
+            print('Wrong command combination!', command_str)
+            return
 
         mode = command_str[0]
         action = command_str[1]
@@ -122,11 +145,12 @@ class InlineCombination():
 
     def usage(self):
         print('Combine following modes and actions to execute a command:')
+
         for m in self.modes.keys():
             print('%-8s: %s' % (m, self.modes[m]['desc']))
             acts = self.modes[m]['actions']
-            for a in acts.keys():
-                print( '-%-7s: %-40s e.g. %s' % (a, acts[a]['desc'], acts[a]['ex']))
+            for key, a in acts.items():
+                print( '-%-7s: %-40s e.g. %s' % (key, a['desc'], a['ex']))
 
 
     def wait(self, vis):
@@ -134,3 +158,14 @@ class InlineCombination():
         while True:
             combination_str = str(sys.stdin.readline().replace('\n', ''))
             self.handle(vis, combination_str)
+
+
+    def try_run_a_visit_command(self, command_str):
+        try:
+            ret = eval("__import__('visit')." + str(command_str))
+            if type(ret) in [ dict, list, tuple ]:
+                pprint(ret)
+            else:
+                print(ret)
+        except Exception as err:
+            print(err)

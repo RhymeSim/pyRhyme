@@ -35,14 +35,14 @@ def main():
     combs = InlineCombination(v.current_cycle(), v.ncycles())
 
     combs.mode('p', 'Plot mode')
-    combs.action('p', 'd', 'draw', 'pd', lambda v, _: v.draw())
-    combs.action('p', 's', 'change scaling', 'pslinear', lambda v, s: v.redraw(scaling=str(s)), after=lambda v, _: v.draw())
-    combs.action('p', 'v', 'change variable', 'pve_tot', lambda o, v: o.redraw(variable=str(v)), after=lambda v, _: v.draw())
-    combs.action('p', 'u', 'set range upper bound', 'pu3.14e5', lambda v, u: v.redraw(zmax=float(u)), after=lambda v, _: v.draw())
-    combs.action('p', 'l', 'set range lower bound', 'pl3.14e5', lambda v, l: v.redraw(zmin=float(l)), after=lambda v, _: v.draw())
+    combs.action('p', 'd', 'Draw', 'pd', lambda v, _: v.draw())
+    combs.action('p', 's', 'Change scaling', 'pslinear', lambda v, s: v.redraw(scaling=str(s)), after=lambda v, _: v.draw())
+    combs.action('p', 'v', 'Change variable', 'pve_tot', lambda o, v: o.redraw(variable=str(v)), after=lambda v, _: v.draw())
+    combs.action('p', 'u', 'Set range upper bound', 'pu3.14e5', lambda v, u: v.redraw(zmax=float(u)), after=lambda v, _: v.draw())
+    combs.action('p', 'l', 'Set range lower bound', 'pl3.14e5', lambda v, l: v.redraw(zmin=float(l)), after=lambda v, _: v.draw())
 
     combs.mode('s', 'Slice mode')
-    combs.action('s', 'l', 'change layer (%)', 'sl25', lambda v, l: v.redraw(percent=int(l)), after=lambda v, _: v.draw())
+    combs.action('s', 'l', 'Change layer (%)', 'sl25', lambda v, l: v.redraw(percent=int(l)), after=lambda v, _: v.draw())
 
 
     if len(args.commands) > 0:

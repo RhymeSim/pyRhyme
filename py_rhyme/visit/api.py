@@ -24,7 +24,6 @@ class VisItAPI:
         Parameter
         interactive: If False, VisIt viewer will be shut down
         """
-
         if not interactive: visit.AddArgument("-nowin")
 
         if visit.Launch() != 1:
@@ -61,7 +60,7 @@ class VisItAPI:
         NB: We assme the list of times is not sorted!
         """
         wid = self.active_window_id()
-        md = self.generate_metadata()
+        md = self.get_metadata()
         diff = [abs(t - time) for time in md['windows'][wid]['times']]
         cycle = diff.index(min(diff))
 
@@ -101,7 +100,7 @@ class VisItAPI:
 
     def pseudocolor_try_colortables(self, sleep=1.5):
         """Trying all available colorTables on an **already drawn** plot"""
-        md = self.generate_metadata()
+        md = self.get_metadata()
         orig = self.find_pseudocolor(md['windows'][self.active_window_id]['plots'])
 
         for ct in visit.ColorTableNames():
@@ -115,7 +114,7 @@ class VisItAPI:
 
     def pseudocolor_colortable(self, ct):
         """Changing a pseudocolor plot color table"""
-        md = self.generate_metadata()
+        md = self.get_metadata()
         plot = self.find_pseudocolor(md['windows'][self.active_window_id]['plots'])
 
         if not plot:
@@ -184,7 +183,7 @@ class VisItAPI:
     def redraw(self, variable=None, scaling=None, zmin=None, zmax=None, ct=None,
         origin_type=None, percent=None, axis_type=None):
         wid = self.active_window_id()
-        md = self.generate_metadata()
+        md = self.get_metadata()
 
         if wid not in md['windows'] or len(md['windows'][wid]['plots']) < 1:
             raise RuntimeError('No plots found in this window!')
@@ -297,10 +296,27 @@ class VisItAPI:
         return drawn
 
 
-    def generate_metadata(self):
+    def get_window_metadata(self, print_it=False, key=None):
+        wmd = _metadata._get_window(self.active_window_id())
+
+        if key is None:
+            if print_it: print(wmd)
+            return wmd
+        else:
+            if key not in wmd:
+                if print_it: print('Unknow key! keys:', wmd.keys())
+                return None
+            else:
+                if print_it: print(wmd[key])
+                return wmd[key]
+
+
+    def get_metadata(self, print_it=False):
         wid = self.active_window_id()
-        md = _metadata._generate()
+        md = _metadata._get()
         visit.SetActiveWindow(wid)
+
+        if print_it: print(md)
 
         return md
 
