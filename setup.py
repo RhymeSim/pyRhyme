@@ -31,11 +31,14 @@ setup(
         'h5py',
         'numpy'
     ],
+    scripts=[
+        'scripts/rhyme_slice',
+        'scripts/rhyme_lineout',
+    ],
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
     cmdclass={
         'chombo': CreateTestChombo,
     },
     zip_safe=False,
-    scripts=['scripts/rhyme_slice'],
 )

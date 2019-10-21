@@ -5,18 +5,16 @@ import argparse
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Plotting a slice of a given chombo file')
+    parser = argparse.ArgumentParser( description='Slice plot of a given Rhyme output')
 
-    parser.add_argument('chombo_path', help='Path to chombo file', type=str)
+    parser.add_argument('chombo_path', help='Path to a Rhyme chombo file', type=str)
 
-    parser.add_argument('--var', help='Pseudocolor plot variable', type=str, default='rho')
+    parser.add_argument('-v', '--var', help='Plotting variable', type=str, default='rho')
     parser.add_argument('-s', '--scaling', help='Pseudocolor plot scaling', choices=['linear', 'log'], type=str, default='log')
     parser.add_argument('--min', help='Pseudocolor minimum value', type=float, default=None)
     parser.add_argument('--max', help='Pseudocolor maximum value', type=float, default=None)
     parser.add_argument('-c', '--colortable', help='Pseudocolor colortable', type=str, default='RdYlBu')
-    parser.add_argument('--invert', help='Inverting pseudocolor colortable', action='store_false')
-
+    parser.add_argument('-i', '--invert', help='Inverting pseudocolor colortable', action='store_false')
     parser.add_argument('-a', '--axis', help='Slicing axis', choices=['x', 'y', 'z'], type=str, default='z')
     parser.add_argument('-p', '--percent', help='Slicing layer (percent)', type=int, default=50)
     parser.add_argument('--commands', help='Comma separated list of inline commands', type=str, default='')

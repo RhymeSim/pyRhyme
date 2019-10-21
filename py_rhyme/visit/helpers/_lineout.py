@@ -4,7 +4,7 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-def _attr(p1, p2, ls='solid', lc=(0, 0, 0, 255), lw=4):
+def _attr(p1, p2, lc, lw):
     """
     Parameter
     p1, p2: normalized (0 <= p1 <= 1) positions

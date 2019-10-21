@@ -1,0 +1,36 @@
+#!/usr/bin/env python
+from py_rhyme.visit import VisItAPI as Vis
+from py_rhyme.visit.script_helper import InlineCombination
+import argparse
+
+def main():
+    parser = argparse.ArgumentParser( description='Linout plot of a given Rhyme output')
+
+    parser.add_argument('chombo_path', help='Path to a Rhyme chombo output', type=str)
+
+    parser.add_argument('-v', '--var', help='Plotting variable', type=str, default='rho')
+    parser.add_argument('--point1', help='Line beginning point', nargs='+', type=float, default=[0, .5, .5])
+    parser.add_argument('--point2', help='Line end point', nargs='+', type=float, default=[1, .5, .5])
+    parser.add_argument('-w', '--line-width', help='Line width', type=int, default=4)
+    parser.add_argument('--commands', help='Comma separated list of inline commands', type=str, default='')
+
+    args = parser.parse_args()
+
+
+    v = Vis()
+    v.open(args.chombo_path)
+    v.lineout(args.var, args.point1, args.point2, line_width=args.line_width)
+    v.draw()
+
+    combs = InlineCombination(v.current_cycle(), v.ncycles())
+
+    if len(args.commands) > 0:
+        commands = args.commands.replace(' ', '').split(',')
+        for command in commands:
+            self.handle(v, command)
+
+
+    combs.wait(v)
+
+if __name__ == '__main__':
+    main()

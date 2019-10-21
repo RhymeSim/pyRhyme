@@ -153,11 +153,12 @@ class VisItAPI:
         visit.SetOperatorOptions(sa)
 
 
-    def lineout(self, variable, point1, point2):
+    def lineout(self, variable, point1, point2, line_color=(0, 0, 0, 255),
+        line_width=4):
         if visit.AddPlot('Curve', 'operators/Lineout/' + variable, 1, 1) != 1:
             raise RuntimeWarning('Unable to plot lineout!', variable)
 
-        la, ca = _lineout._attr(point1, point2)
+        la, ca = _lineout._attr(point1, point2, lc=line_color, lw=line_width)
         visit.SetOperatorOptions(la)
         visit.SetPlotOptions(ca)
 
