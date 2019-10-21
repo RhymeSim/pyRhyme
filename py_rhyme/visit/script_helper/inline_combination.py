@@ -144,18 +144,22 @@ class InlineCombination():
 
 
     def usage(self):
-        print('Combine following modes and actions to execute a command:')
+        print('Combine following modes and actions to execute a command:\n')
 
         for m in self.modes.keys():
-            print('%-8s: %s' % (m, self.modes[m]['desc']))
+            print('%-1s (%s)' % (m, self.modes[m]['desc']))
             acts = self.modes[m]['actions']
             for key, a in acts.items():
-                print( '-%-7s: %-40s e.g. %s' % (key, a['desc'], a['ex']))
+                print( '-%-7s: %-40s ex: %s' % (key, a['desc'], a['ex']))
+
+            print('')
 
 
     def wait(self, vis):
         self.usage()
+
         while True:
+            sys.stdout.write('>>> ')
             combination_str = str(sys.stdin.readline().replace('\n', ''))
             self.handle(vis, combination_str)
 

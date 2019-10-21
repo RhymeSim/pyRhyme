@@ -13,10 +13,14 @@ def _attr(p1, p2, ls='solid', lc=(0, 0, 0, 255), lw=4):
     lw: line width
     """
     lo_attr = visit.LineoutAttributes()
-    info = visit.GetWindowInformation()
 
-    lo_attr.point1 = p1 * info.extents
-    lo_attr.point2 = p2 * info.extents
+    info = visit.GetWindowInformation()
+    md = visit.GetMetaData(info.activeSource)
+    offsets = md.GetMeshes(0).minSpatialExtents
+    lengths = [x - o for x, o in zip(md.GetMeshes(0).maxSpatialExtents, offsets)]
+
+    lo_attr.point1 = tuple([p * l + o for p, l, o in zip(p1, lengths, offsets)])
+    lo_attr.point2 = tuple([p * l + o for p, l, o in zip(p2, lengths, offsets)])
 
     lo_attr.interactive = 0
     lo_attr.ignoreGlobal = 0
