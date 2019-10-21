@@ -4,7 +4,7 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-def _attr(xt, xu, xs, xn, xx, yt, yu, ys, yn, yx, c, bg, fg, se):
+def _attr(xt, xu, xs, xn, xx, yt, yu, ys, yn, yx, c, bg, fg):
     """
     Parameter
     xt: xtitle
@@ -20,7 +20,6 @@ def _attr(xt, xu, xs, xn, xx, yt, yu, ys, yn, yx, c, bg, fg, se):
     c: color
     bg: background
     fg: foreground
-    se: spatial extents
     """
 
     aa = visit.AnnotationAttributes()
@@ -108,11 +107,15 @@ def _attr(xt, xu, xs, xn, xx, yt, yu, ys, yn, yx, c, bg, fg, se):
     elif ys == 'linear':
         v2da.yScale = v2da.LINEAR
 
+
+    info = visit.GetWindowInformation()
+    md = visit.GetMetaData(info.activeSource)
+
     spatial_extents = [
-        xn if xn is not None else se[0],
-        xx if xx is not None else se[1],
-        yn if yn is not None else se[2],
-        yx if yx is not None else se[3],
+        xn if xn is not None else md.GetMeshes(0).minSpatialExtents[0],
+        xx if xx is not None else md.GetMeshes(0).maxSpatialExtents[0],
+        yn if yn is not None else md.GetMeshes(0).minSpatialExtents[1],
+        yx if yx is not None else md.GetMeshes(0).maxSpatialExtents[1],
     ]
 
     v2da.viewportCoords = (0.2, 0.95, 0.15, 0.90)

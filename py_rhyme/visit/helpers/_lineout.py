@@ -4,23 +4,27 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-def _attr(p1, p2, lc, lw):
+def _attr(p1, p2, cc, lw, cp):
     """
     Parameter
     p1, p2: normalized (0 <= p1 <= 1) positions
     ls: line style: solid, dash, dot, dotdash
-    lc: line color
+    cc: line color
     lw: line width
+    cp: convert_points
     """
     lo_attr = visit.LineoutAttributes()
 
-    info = visit.GetWindowInformation()
-    md = visit.GetMetaData(info.activeSource)
-    offsets = md.GetMeshes(0).minSpatialExtents
-    lengths = [x - o for x, o in zip(md.GetMeshes(0).maxSpatialExtents, offsets)]
+    if cp:
+        info = visit.GetWindowInformation()
+        md = visit.GetMetaData(info.activeSource)
+        offsets = md.GetMeshes(0).minSpatialExtents
+        lengths = [x - o for x, o in zip(md.GetMeshes(0).maxSpatialExtents, offsets)]
+        p1 = [p * l + o for p, l, o in zip(p1, lengths, offsets)]
+        p2 = [p * l + o for p, l, o in zip(p2, lengths, offsets)]
 
-    lo_attr.point1 = tuple([p * l + o for p, l, o in zip(p1, lengths, offsets)])
-    lo_attr.point2 = tuple([p * l + o for p, l, o in zip(p2, lengths, offsets)])
+    lo_attr.point1 = tuple(p1)
+    lo_attr.point2 = tuple(p2)
 
     lo_attr.interactive = 0
     lo_attr.ignoreGlobal = 0
@@ -43,12 +47,12 @@ def _attr(p1, p2, lc, lw):
     c_attr.curveColor = (0, 0, 0, 255)
     c_attr.showLegend = 1
     c_attr.showLabels = 0
-    c_attr.designator = "designator"
+    c_attr.designator = ''
     c_attr.doBallTimeCue = 0
-    c_attr.ballTimeCueColor = lc
+    c_attr.ballTimeCueColor = cc
     c_attr.timeCueBallSize = 0.01
     c_attr.doLineTimeCue = 0
-    c_attr.lineTimeCueColor = lc
+    c_attr.lineTimeCueColor = cc
     c_attr.lineTimeCueWidth = 0
     c_attr.doCropTimeCue = 0
     c_attr.timeForTimeCue = 0
@@ -63,4 +67,13 @@ def _attr(p1, p2, lc, lw):
 
 
 def _check(p):
-    return True if 'type' in p and p['operators']['type'] == 'Lineout' else False
+    if 'type' in p and p['type'] == 'Curve':
+        if 0 in p['operators']:
+            if 'type' in p['operators'][0] and p['operators'][0]['type'] == 'Lineout':
+                return True
+            else:
+                return False
+        else:
+            return False
+    else:
+        return False

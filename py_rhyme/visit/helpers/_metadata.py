@@ -7,14 +7,22 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-def _get_plot_operator(oid):
+def _get_plot_operator(plot_obj, oid):
     operator = {}
 
     op = visit.GetOperatorOptions(oid)
 
-    operator['origin_type'] = op.originType
-    operator['origin_percent'] = op.originPercent
-    operator['axis_type'] = op.axisType
+    operator['type'] = plot_obj.operatorNames[oid]
+
+    if operator['type'] == 'Slice':
+        operator['origin_type'] = op.originType
+        operator['origin_percent'] = op.originPercent
+        operator['axis_type'] = op.axisType
+    elif operator['type'] == 'Lineout':
+        operator['point1'] = op.point1
+        operator['point2'] = op.point2
+    else:
+        raise RuntimeError('Unknow operator!', operator['type'])
 
     return operator
 
@@ -23,8 +31,7 @@ def _get_plot_operators(plot_obj):
     operators = {}
 
     for oid in range(len(plot_obj.operatorNames)):
-        operators[oid] = _get_plot_operator(oid)
-        operators[oid]['type'] = plot_obj.operatorNames[oid]
+        operators[oid] = _get_plot_operator(plot_obj, oid)
 
     return operators
 

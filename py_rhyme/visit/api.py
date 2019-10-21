@@ -1,4 +1,6 @@
-import time, copy, os
+import time, copy, os, re
+from pprint import pprint
+
 from .helpers import _pseudocolor
 from .helpers import _curve_plot
 from .helpers import _slice
@@ -153,12 +155,18 @@ class VisItAPI:
         visit.SetOperatorOptions(sa)
 
 
-    def lineout(self, variable, point1, point2, line_color=(0, 0, 0, 255),
-        line_width=4):
-        if visit.AddPlot('Curve', 'operators/Lineout/' + variable, 1, 1) != 1:
+    def lineout(self, variable, point1, point2, curve_color=(0, 0, 0, 255),
+        line_width=4, convert_points=True):
+        if re.match('^operators/Lineout/*.', variable):
+            var = variable
+        else:
+            var = 'operators/Lineout/' + variable
+
+        if visit.AddPlot('Curve', var, 1, 1) != 1:
             raise RuntimeWarning('Unable to plot lineout!', variable)
 
-        la, ca = _lineout._attr(point1, point2, lc=line_color, lw=line_width)
+        la, ca = _lineout._attr(point1, point2, cc=curve_color, lw=line_width,
+            cp=convert_points)
         visit.SetOperatorOptions(la)
         visit.SetPlotOptions(ca)
 
@@ -172,17 +180,16 @@ class VisItAPI:
         if visit.DrawPlots() != 1:
             raise RuntimeWarning('Unable to draw plots.')
 
-        se = self.query('SpatialExtents')['extents']
-
         aa, v2da = _draw._attr(xtitle, xunit, xscale, xmin, xmax,
-        ytitle, yunit, yscale, ymin, ymax, color, bg, fg, se)
+        ytitle, yunit, yscale, ymin, ymax, color, bg, fg)
 
         visit.SetAnnotationAttributes(aa)
         visit.SetView2D(v2da)
 
 
     def redraw(self, variable=None, scaling=None, zmin=None, zmax=None, ct=None,
-        origin_type=None, percent=None, axis_type=None):
+        origin_type=None, percent=None, axis_type=None, line_width=None,
+        curve_color=None, point1=None, point2=None, convert_points=None):
         wid = self.active_window_id()
         md = self.get_metadata()
 
@@ -211,6 +218,17 @@ class VisItAPI:
                         p = o['origin_percent'] if percent is None else percent
                         at = o['axis_type'] if axis_type is None else axis_type
                         self.slice(origin_type=ot, percent=p, axis_type=at)
+
+            elif _lineout._check(p):
+                var = p['variable'] if variable is None else variable
+                lw = p['line_width'] if line_width is None else line_width
+                cc = p['curve_color'] if curve_color is None else curve_color
+                p1 = p['operators'][0]['point1'] if point1 is None else point1
+                p2 = p['operators'][0]['point2'] if point2 is None else point2
+                cp = convert_points is not None else convert_points
+
+                self.lineout(var, p1, p2, curve_color=cc, line_width=lw,
+                    convert_points=)
 
 
     def line(self, p1=(0.75, 0.75), p2=(0.75, 0.75), width=1,
@@ -301,11 +319,11 @@ class VisItAPI:
         wmd = _metadata._get_window(self.active_window_id())
 
         if key is None:
-            if print_it: print(wmd)
+            if print_it: pprint(wmd)
             return wmd
         else:
             if key not in wmd:
-                if print_it: print('Unknow key! keys:', wmd.keys())
+                if rint_it: print('Unknow key! keys:', wmd.keys())
                 return None
             else:
                 if print_it: print(wmd[key])
@@ -317,7 +335,7 @@ class VisItAPI:
         md = _metadata._get()
         visit.SetActiveWindow(wid)
 
-        if print_it: print(md)
+        if print_it: pprint(md)
 
         return md
 

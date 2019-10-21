@@ -24,6 +24,14 @@ def main():
 
     combs = InlineCombination(v.current_cycle(), v.ncycles())
 
+    combs.mode('p', 'Plot mode')
+    combs.action('p', 'd', 'Draw', 'pd', lambda v, _: v.draw())
+    combs.action('p', 'v', 'Change varable', 'pvrho_u', lambda o, v: o.redraw(variable=v), after=lambda v, _: v.draw())
+    combs.action('p', 'w', 'Change line width', 'pw5', lambda o, w: o.redraw(line_width=int(w)), after=lambda v, _: v.draw())
+    combs.action('p', '1', 'Change 1st point', 'p1(0, .5 .5)', lambda o, p: o.redraw(point1=eval(p)), after=lambda v, _: v.draw())
+    combs.action('p', '2', 'Change 2nd point', 'p2(1, .5 .5)', lambda o, p: o.redraw(point2=eval(p)), after=lambda v, _: v.draw())
+
+
     if len(args.commands) > 0:
         commands = args.commands.replace(' ', '').split(',')
         for command in commands:
