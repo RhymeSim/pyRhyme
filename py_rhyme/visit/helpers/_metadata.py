@@ -47,11 +47,18 @@ def _generate():
 
             plot['type'] = visit.PlotPlugins()[plot_obj.plotType]
             plot['variable'] = plot_obj.plotVar
-            plot['scaling'] = plot_opt.scaling
-            plot['min'] = plot_opt.min if plot_opt.minFlag != 0 else None
-            plot['max'] = plot_opt.max if plot_opt.maxFlag != 0 else None
-            plot['ct'] = plot_opt.colorTableName
-            plot['invert_ct'] = plot_opt.invertColorTable
+
+            if plot['type'] == 'Pseudocolor':
+                plot['scaling'] = plot_opt.scaling
+                plot['min'] = plot_opt.min if plot_opt.minFlag != 0 else None
+                plot['max'] = plot_opt.max if plot_opt.maxFlag != 0 else None
+                plot['ct'] = plot_opt.colorTableName
+                plot['invert_ct'] = plot_opt.invertColorTable
+            elif plot['type'] == 'Curve':
+                plot['line_width'] = plot_opt.lineWidth
+                plot['curve_color'] = plot_opt.curveColor
+            else:
+                raise RuntimeError('Unknow plot', plot['type'])
 
             plot['operators'] = {}
 

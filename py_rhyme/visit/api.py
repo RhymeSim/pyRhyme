@@ -287,12 +287,14 @@ class VisItAPI:
 
 
     def raise_exception_if_window_is_not_drawn(self):
-        # wid = self.active_window_id()
-        # if self.metadata['windows'][wid]['drawn']:
-            # return True
-        # else:
-            # return False
-        return True
+        drawn = True
+
+        for pid in range(visit.GetNumPlots()):
+            plot = visit.GetPlotList().GetPlots(pid)
+            if plot.plotType != plot.Completed:
+                drawn = False
+
+        return drawn
 
 
     def generate_metadata(self):
