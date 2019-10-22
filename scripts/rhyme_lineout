@@ -22,15 +22,20 @@ def main():
     v.open(args.chombo_path)
     v.lineout(args.var, args.point1, args.point2, line_width=args.line_width)
     v.draw(xscale=args.domain_scale, yscale=args.range_scale)
+    v.reset_view()
 
     combs = InlineCombination(v.current_cycle(), v.ncycles())
 
     combs.mode('p', 'Plot mode')
-    combs.action('p', 'd', 'Draw', 'pd', lambda v, _: v.redraw())
-    combs.action('p', 'v', 'Change varable', 'pvrho_u', lambda o, v: o.redraw(variable=v))
-    combs.action('p', 'w', 'Change line width', 'pw5', lambda o, w: o.redraw(line_width=int(w)))
-    combs.action('p', '1', 'Change 1st point', 'p1(0, .5 .5)', lambda o, p: o.redraw(point1=eval(p)))
-    combs.action('p', '2', 'Change 2nd point', 'p2(1, .5 .5)', lambda o, p: o.redraw(point2=eval(p)))
+    combs.action('p', 'd', 'Draw', 'pd', lambda v, _: v.redraw(), after=lambda o, _: o.reset_view())
+    combs.action('p', 'v', 'Change varable', 'pvrho_u', lambda o, v: o.redraw(variable=v), after=lambda o, _: o.reset_view())
+    combs.action('p', 'w', 'Change line width', 'pw5', lambda o, w: o.redraw(line_width=int(w)), after=lambda o, _: o.reset_view())
+    combs.action('p', '1', 'Change 1st point', 'p1(0, .5 .5)', lambda o, p: o.redraw(point1=eval(p)), after=lambda o, _: o.reset_view())
+    combs.action('p', '2', 'Change 2nd point', 'p2(1, .5 .5)', lambda o, p: o.redraw(point2=eval(p)), after=lambda o, _: o.reset_view())
+
+    combs.mode('s', 'Scaling mode')
+    combs.action('s', 'x', 'Change x-axis scaling', 'sxlog', lambda o, s: o.redraw(xscale=str(s)), after=lambda o, _: o.reset_view())
+    combs.action('s', 'y', 'Change y-axis scaling', 'sylinear', lambda o, s: o.redraw(yscale=str(s)), after=lambda o, _: o.reset_view())
 
 
     if len(args.commands) > 0:

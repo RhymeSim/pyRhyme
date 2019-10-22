@@ -4,7 +4,7 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-def _2d_attr(xs, ys):
+def _2d(xs, ys):
     """
     Parameter
     xs: xscale
@@ -14,6 +14,22 @@ def _2d_attr(xs, ys):
 
     attr.xScale = __get_scaling(xs, attr.LINEAR, attr.LOG)
     attr.yScale = __get_scaling(ys, attr.LINEAR, attr.LOG)
+
+    attr.viewportCoords = (0.2, 0.95, 0.15, 0.90)
+
+    return attr
+
+
+def _curve(ds, rs):
+    """
+    Parameter
+    rs: range scale, log or linear
+    ds: domain scale, log or linear
+    """
+    attr = visit.ViewCurveAttributes()
+
+    attr.domainScale = __get_scaling(ds, attr.LINEAR, attr.LOG)
+    attr.rangeScale = __get_scaling(rs, attr.LINEAR, attr.LOG)
 
     attr.viewportCoords = (0.2, 0.95, 0.15, 0.90)
 

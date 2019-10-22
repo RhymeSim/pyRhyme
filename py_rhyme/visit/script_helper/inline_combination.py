@@ -1,4 +1,4 @@
-import sys
+import sys, re
 from pprint import pprint
 
 try:
@@ -20,8 +20,11 @@ class InlineCombination():
                 'q': { 'desc': 'Quit', 'ex': 'xq',
                     'run': lambda v, _: sys.exit(0),
                 },
-                'r': { 'desc': 'Run a VisIt command', 'ex': 'xrExpressions()',
+                'v': { 'desc': 'Run a VisIt command', 'ex': 'xvExpressions()',
                     'run': lambda v, c: self.try_run_a_visit_command(c),
+                },
+                'r': { 'desc': 'Run a VisItAPI command', 'ex': 'xrget_metadata(print_it=True)',
+                    'run': lambda v, c: self.try_run_a_visitapi_command(v, c),
                 },
             }},
             'h': { 'desc': 'Help mode', 'actions': {
@@ -68,6 +71,24 @@ class InlineCombination():
             'v': { 'desc': 'View mode', 'actions': {
                 'r': { 'desc': 'Reset view', 'ex': 'vr',
                     'run': lambda v, _: v.reset_view(),
+                },
+                'x': { 'desc': 'Update x-axis title', 'ex': 'vxPos X',
+                    'run': lambda v, t: v.redraw(xtitle=str(t)),
+                    'after': lambda v, _: v.reset_view(),
+                },
+                'y': { 'desc': 'Update y-axis title', 'ex': 'vyPos Y',
+                    'run': lambda v, t: v.redraw(ytitle=str(t)),
+                    'after': lambda v, _: v.reset_view(),
+                },
+            }},
+            'u': { 'desc': 'Unit mode', 'actions': {
+                'x': { 'desc': 'Update x-axis unit', 'ex': 'uxMpc',
+                    'run': lambda v, u: v.redraw(xunit=str(u)),
+                    'after': lambda v, _: v.reset_view(),
+                },
+                'y': { 'desc': 'Update y-axis unit', 'ex': 'uyMpc',
+                    'run': lambda v, u: v.redraw(yunit=str(u)),
+                    'after': lambda v, _: v.reset_view(),
                 },
             }},
         }
@@ -177,9 +198,28 @@ class InlineCombination():
     def try_run_a_visit_command(self, command_str):
         try:
             ret = eval("__import__('visit')." + str(command_str))
-            if type(ret) in [ dict, list, tuple ]:
-                pprint(ret)
-            else:
-                print(ret)
+            self.pretty_print(ret)
         except Exception as err:
             print(err)
+
+
+    def try_run_a_visitapi_command(self, visitapi, command_str):
+        if not re.match('.+\(.*\)$', command_str):
+            print('Wrong command format!', command_str)
+            return
+
+        method_name = re.split('\(|\)', command_str)[0]
+        args = re.split('\(|\)', command_str)[1]
+
+        try:
+            ret = eval("getattr(visitapi, '" + method_name + "')(" + args + ")")
+            self.pretty_print(ret)
+        except Exception as err:
+            print(err)
+
+
+    def pretty_print(self, v):
+        if type(v) in [dict, list, tuple]:
+            pprint(v)
+        else:
+            print(v)

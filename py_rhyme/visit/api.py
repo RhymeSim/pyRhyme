@@ -59,11 +59,6 @@ class VisItAPI:
         return info.timeSliderCurrentStates[info.activeTimeSlider]
 
     def time(self, t):
-        """
-        Changing the snapshot with the closes time to t
-
-        NB: We assme the list of times is not sorted!
-        """
         wid = self.active_window_id()
         md = self.get_metadata()
         diff = [abs(t - time) for time in md['windows'][wid]['times']]
@@ -72,10 +67,6 @@ class VisItAPI:
         self.cycle(cycle)
 
     def active_window_id(self):
-        ga = visit.GetGlobalAttributes()
-        return ga.windows[ga.activeWindow]
-
-    def active_window(self):
         ga = visit.GetGlobalAttributes()
         return ga.windows[ga.activeWindow]
 
@@ -89,13 +80,6 @@ class VisItAPI:
 
     def pseudocolor(self, var, scaling='log', zmin=None, zmax=None,
         ct='RdYlBu', invert_ct=0):
-        """
-        Parameter
-        var: Variable to be plotted
-        scaling: log, linear
-        ct: Name of the color table to be used
-        invert_ct: If 1, color table will be inverted
-        """
         if visit.AddPlot( 'Pseudocolor', var, 1, 1 ) != 1:
             raise RuntimeWarning('Unable to add Pseudocolor plot.')
 
@@ -104,7 +88,6 @@ class VisItAPI:
 
 
     def pseudocolor_try_colortables(self, sleep=1.5):
-        """Trying all available colorTables on an **already drawn** plot"""
         md = self.get_metadata()
         orig = self.find_pseudocolor(md['windows'][self.active_window_id]['plots'])
 
@@ -118,7 +101,6 @@ class VisItAPI:
 
 
     def pseudocolor_colortable(self, ct):
-        """Changing a pseudocolor plot color table"""
         md = self.get_metadata()
         plot = self.find_pseudocolor(md['windows'][self.active_window_id]['plots'])
 
@@ -168,7 +150,9 @@ class VisItAPI:
         if visit.AddPlot('Curve', var, 1, 1) != 1:
             raise RuntimeWarning('Unable to plot lineout!', variable)
 
-        la, ca = _lineout._attr(point1, point2, cc=curve_color, lw=line_width)
+        la = _lineout._attr(point1, point2)
+        ca = _curve._attr(line_width, curve_color)
+
         visit.SetOperatorOptions(la)
         visit.SetPlotOptions(ca)
 
@@ -181,26 +165,25 @@ class VisItAPI:
     def draw(self, xtitle='X', xunit='Mpc', xscale='linear', xmin=None, xmax=None,
         ytitle='Y', yunit='Mpc', yscale='linear', ymin=None, ymax=None,
         color=(0, 0, 0, 255), bg=(255, 255, 255, 255), fg=(0, 0, 0, 255)):
-        """
-        Drawing plots on VisIt viewer
-        """
+
         if visit.DrawPlots() != 1:
             raise RuntimeWarning('Unable to draw plots.')
 
         annot = _annotation._attr(xtitle, xunit, ytitle, yunit, color, bg, fg)
-        view2d = _view._2d_attr(xscale, yscale)
-        curve = _curve._attr(xscale, yscale)
+        view2d = _view._2d(xscale, yscale)
+        curve = _view._curve(xscale, yscale)
 
         visit.SetAnnotationAttributes(annot)
         visit.SetView2D(view2d)
         visit.SetViewCurve(curve)
 
-        self.reset_view()
-
 
     def redraw(self, variable=None, scaling=None, zmin=None, zmax=None, ct=None,
         origin_type=None, percent=None, axis_type=None, line_width=None,
-        curve_color=None, point1=None, point2=None, convert_points=None):
+        curve_color=None, point1=None, point2=None, convert_points=None,
+        xtitle=None, ytitle=None, xunit=None, yunit=None,
+        xscale=None, yscale=None, color=None, bg=None, fg=None):
+
         wid = self.active_window_id()
         md = self.get_metadata()
 
@@ -233,15 +216,6 @@ class VisItAPI:
                 v = md['windows'][wid]['view']['2d']
                 a = md['windows'][wid]['view']['annotation']
 
-                self.draw(
-                    xtitle=a['xtitle'], ytitle=a['ytitle'],
-                    xunit=a['xunit'], yunit=a['yunit'],
-                    xscale=v['xscale'], yscale=v['yscale'],
-                    xmin=v['window_coords'][0], xmax=v['window_coords'][1],
-                    ymin=v['window_coords'][2], ymax=v['window_coords'][3],
-                    color=a['color'], bg=a['bg'], fg=a['fg'])
-
-
             elif _lineout._check(p):
                 var = p['variable'] if variable is None else variable
                 lw = p['line_width'] if line_width is None else line_width
@@ -254,44 +228,27 @@ class VisItAPI:
                 v = md['windows'][wid]['view']['curve']
                 a = md['windows'][wid]['view']['annotation']
 
-                self.draw(
-                    xtitle=a['xtitle'], ytitle=a['ytitle'],
-                    xunit=a['xunit'], yunit=a['yunit'],
-                    xscale=v['domain_scale'], yscale=v['range_scale'],
-                    xmin=v['domain_coords'][0], xmax=v['domain_coords'][1],
-                    ymin=v['range_coords'][0], ymax=v['range_coords'][1],
-                    color=a['color'], bg=a['bg'], fg=a['fg'])
+            else:
+                raise RuntimeError('Unknown plot!', p)
 
-        self.reset_view()
+
+            self.draw(xtitle=a['xtitle'] if xtitle is None else xtitle,
+                ytitle=a['ytitle'] if ytitle is None else ytitle,
+                xunit=a['xunit'] if xunit is None else xunit,
+                yunit=a['yunit'] if yunit is None else yunit,
+                xscale=v['xscale'] if xscale is None else xscale,
+                yscale=v['yscale'] if yscale is None else yscale,
+                color=a['color'] if color is None else color,
+                bg=a['bg'] if bg is None else bg,
+                fg=a['fg'] if fg is None else fg)
 
 
     def line(self, p1=(0.75, 0.75), p2=(0.75, 0.75), width=1,
         color=(0, 0, 0, 255), opacity=255, begin_arrow=0, end_arrow=0):
-        """
-        Drawing a line
-
-        Parameter
-        p1, p2: Start and ending points, <tuple float, float>
-        width: 0 < <float> < 1
-        color: 0 < <quadruple int, int, int, int> < 255
-        opacity: 0 < <int> < 255
-        begin_arrow: Add arrow shape to the begining of the line, 0 or 1
-        end_arrow: Add arrow shape to the end of the line, 0 or 1
-
-        Return
-        Line name, annotation object
-        """
-
         ao = new_line(p1, p2, width, color, opacity, begin_arrow, end_arrow)
 
 
     def query(self, q=''):
-        """
-        Run a Query
-
-        Parameter
-        q: Query string
-        """
         queries = visit.Queries()
 
         if q in queries:
@@ -304,29 +261,17 @@ class VisItAPI:
         queries = visit.QueriesOverTime()
 
         if q in queries:
-            aw = self.active_window()
+            wid = self.active_window_id()
 
             if visit.QueryOverTime(q) != 1:
-                raise RuntimeWarning('Unable to run the query_over_time:', q)
-
-            wid = self.active_window_id()
-            visit.SetActiveWindow(wid)
-
-            pi = visit.GetPlotInformation()
-            pi['windowId'] = wid
+                raise RuntimeWarning('Unable to run the query_over_time!', q)
 
             visit.SetActiveWindow(aw)
-            return pi
         else:
-            raise RuntimeWarning('Invalid query_over_time!')
+            raise RuntimeWarning('Invalid query_over_time!', q)
 
 
     def minimum_over_time(self):
-        """
-        TODO:
-        ViewCurveAttributes
-        SetViewCurve
-        """
         cmin = self.query_over_time('Min')
         cmin['min'] = min(cmin['Curve'][1::2])
         return cmin
@@ -375,8 +320,5 @@ class VisItAPI:
 
 
     def close(self):
-        """
-        Closing VisIt windwo
-        """
         if visit.Close() != 1:
             raise RuntimeError('Unable to close VisIt.')

@@ -96,7 +96,9 @@ def _get_current_curve():
     curve['domain_coords'] = attr.domainCoords
     curve['range_coords'] = attr.rangeCoords
     curve['domain_scale'] = attr.domainScale
+    curve['xscale'] = curve['domain_scale']
     curve['range_scale'] = attr.rangeScale
+    curve['yscale'] = curve['range_scale']
 
     return curve
 
