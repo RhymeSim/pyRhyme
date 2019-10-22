@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from py_rhyme.visit import VisItAPI as Vis
-from py_rhyme.visit.script_helper import InlineCombination
+from py_rhyme.visit.helpers.script import InlineCombination
 import argparse
 
 
