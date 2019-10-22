@@ -117,6 +117,7 @@ def _get_window(wid):
 
     md = visit.GetMetaData(ds)
     vars = [md.GetScalars(i).name for i in range(md.GetNumScalars())]
+    exprs = [e[0] for e in visit.Expressions()]
 
     window['database'] = ds
     window['id'] = id
@@ -124,7 +125,7 @@ def _get_window(wid):
     window['cycles'] = md.cycles
     window['ncycles'] = len(md.cycles)
     window['times'] = md.times
-    window['variables'] = vars
+    window['variables'] = vars + exprs
     window['extents'] = info.extents
     window['plots'] = {}
 

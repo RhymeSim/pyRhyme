@@ -39,6 +39,9 @@ class InlineCombination():
                 'w': { 'desc': 'Current woindow', 'ex': 'iw, iwcycle',
                     'run': lambda v, k: v.get_window_metadata(print_it=True, key=k),
                 },
+                'v': { 'desc': 'Valid variables', 'ex': 'iv',
+                    'run': lambda v, _: v.get_window_metadata(print_it=True, key='variables'),
+                },
             }},
             't': { 'desc': 'Time mode', 'actions': {
                 't': { 'desc': 'Find snapshot with closes time', 'ex': 'tt16.5',
