@@ -11,25 +11,26 @@ def main():
     parser.add_argument('-v', '--var', help='Plotting variable', type=str, default='rho')
     parser.add_argument('--point1', help='Line beginning point', nargs='+', type=float, default=[0, .5, .5])
     parser.add_argument('--point2', help='Line end point', nargs='+', type=float, default=[1, .5, .5])
+    parser.add_argument('--range-scale', help='Range scale', choices=['log', 'linear'], type=str, default='log')
+    parser.add_argument('--domain-scale', help='Domain scale', choices=['log', 'linear'], type=str, default='linear')
     parser.add_argument('-w', '--line-width', help='Line width', type=int, default=4)
     parser.add_argument('--commands', help='Comma separated list of inline commands', type=str, default='')
 
     args = parser.parse_args()
 
-
     v = Vis()
     v.open(args.chombo_path)
     v.lineout(args.var, args.point1, args.point2, line_width=args.line_width)
-    v.draw()
+    v.draw(xscale=args.domain_scale, yscale=args.range_scale)
 
     combs = InlineCombination(v.current_cycle(), v.ncycles())
 
     combs.mode('p', 'Plot mode')
-    combs.action('p', 'd', 'Draw', 'pd', lambda v, _: v.draw())
-    combs.action('p', 'v', 'Change varable', 'pvrho_u', lambda o, v: o.redraw(variable=v), after=lambda v, _: v.draw())
-    combs.action('p', 'w', 'Change line width', 'pw5', lambda o, w: o.redraw(line_width=int(w)), after=lambda v, _: v.draw())
-    combs.action('p', '1', 'Change 1st point', 'p1(0, .5 .5)', lambda o, p: o.redraw(point1=eval(p)), after=lambda v, _: v.draw())
-    combs.action('p', '2', 'Change 2nd point', 'p2(1, .5 .5)', lambda o, p: o.redraw(point2=eval(p)), after=lambda v, _: v.draw())
+    combs.action('p', 'd', 'Draw', 'pd', lambda v, _: v.redraw())
+    combs.action('p', 'v', 'Change varable', 'pvrho_u', lambda o, v: o.redraw(variable=v))
+    combs.action('p', 'w', 'Change line width', 'pw5', lambda o, w: o.redraw(line_width=int(w)))
+    combs.action('p', '1', 'Change 1st point', 'p1(0, .5 .5)', lambda o, p: o.redraw(point1=eval(p)))
+    combs.action('p', '2', 'Change 2nd point', 'p2(1, .5 .5)', lambda o, p: o.redraw(point2=eval(p)))
 
 
     if len(args.commands) > 0:

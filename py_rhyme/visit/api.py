@@ -2,13 +2,14 @@ import time, copy, os, re
 from pprint import pprint
 
 from .helpers import _pseudocolor
-from .helpers import _curve_plot
+from .helpers import _curve
 from .helpers import _slice
-from .helpers import _draw
+from .helpers import _view
 from .helpers import _line
 from .helpers import _database
 from .helpers import _metadata
 from .helpers import _lineout
+from .helpers import _annotation
 
 try:
     import visit
@@ -38,8 +39,10 @@ class VisItAPI:
     def open(self, path):
         _database._open(path)
 
-    def cycle(self, c):
+    def cycle(self, c, reset_view=False):
         _database._change_state(c)
+        if reset_view:
+            self.reset_view()
 
     def next_cycle(self):
         visit.TimeSliderNextState()
@@ -170,6 +173,11 @@ class VisItAPI:
         visit.SetPlotOptions(ca)
 
 
+    def reset_view(self):
+        if visit.ResetView() != 1:
+            raise RuntimeWarning('Unable to reset the view!')
+
+
     def draw(self, xtitle='X', xunit='Mpc', xscale='linear', xmin=None, xmax=None,
         ytitle='Y', yunit='Mpc', yscale='linear', ymin=None, ymax=None,
         color=(0, 0, 0, 255), bg=(255, 255, 255, 255), fg=(0, 0, 0, 255)):
@@ -179,11 +187,15 @@ class VisItAPI:
         if visit.DrawPlots() != 1:
             raise RuntimeWarning('Unable to draw plots.')
 
-        aa, v2da = _draw._attr(xtitle, xunit, xscale, xmin, xmax,
-        ytitle, yunit, yscale, ymin, ymax, color, bg, fg)
+        annot = _annotation._attr(xtitle, xunit, ytitle, yunit, color, bg, fg)
+        view2d = _view._2d_attr(xscale, yscale)
+        curve = _curve._attr(xscale, yscale)
 
-        visit.SetAnnotationAttributes(aa)
-        visit.SetView2D(v2da)
+        visit.SetAnnotationAttributes(annot)
+        visit.SetView2D(view2d)
+        visit.SetViewCurve(curve)
+
+        self.reset_view()
 
 
     def redraw(self, variable=None, scaling=None, zmin=None, zmax=None, ct=None,
@@ -218,6 +230,18 @@ class VisItAPI:
                         at = o['axis_type'] if axis_type is None else axis_type
                         self.slice(origin_type=ot, percent=p, axis_type=at)
 
+                v = md['windows'][wid]['view']['2d']
+                a = md['windows'][wid]['view']['annotation']
+
+                self.draw(
+                    xtitle=a['xtitle'], ytitle=a['ytitle'],
+                    xunit=a['xunit'], yunit=a['yunit'],
+                    xscale=v['xscale'], yscale=v['yscale'],
+                    xmin=v['window_coords'][0], xmax=v['window_coords'][1],
+                    ymin=v['window_coords'][2], ymax=v['window_coords'][3],
+                    color=a['color'], bg=a['bg'], fg=a['fg'])
+
+
             elif _lineout._check(p):
                 var = p['variable'] if variable is None else variable
                 lw = p['line_width'] if line_width is None else line_width
@@ -226,6 +250,19 @@ class VisItAPI:
                 p2 = p['operators'][0]['point2'] if point2 is None else point2
 
                 self.lineout(var, p1, p2, curve_color=cc, line_width=lw)
+
+                v = md['windows'][wid]['view']['curve']
+                a = md['windows'][wid]['view']['annotation']
+
+                self.draw(
+                    xtitle=a['xtitle'], ytitle=a['ytitle'],
+                    xunit=a['xunit'], yunit=a['yunit'],
+                    xscale=v['domain_scale'], yscale=v['range_scale'],
+                    xmin=v['domain_coords'][0], xmax=v['domain_coords'][1],
+                    ymin=v['range_coords'][0], ymax=v['range_coords'][1],
+                    color=a['color'], bg=a['bg'], fg=a['fg'])
+
+        self.reset_view()
 
 
     def line(self, p1=(0.75, 0.75), p2=(0.75, 0.75), width=1,

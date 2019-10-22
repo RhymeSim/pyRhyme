@@ -40,6 +40,7 @@ class InlineCombination():
             't': { 'desc': 'Time mode', 'actions': {
                 't': { 'desc': 'Find snapshot with closes time', 'ex': 'tt16.5',
                     'run': lambda v, t: v.time(float(t)),
+                    'after': lambda v, _: v.reset_view(),
                 },
             }},
             'c': { 'desc': 'Cycle mode', 'actions': {
@@ -56,8 +57,17 @@ class InlineCombination():
                     'after': lambda v, n:  self.set_cycle(self.cycle + 1),
                 },
                 'p': { 'desc': 'Play', 'ex': 'cp, cp10',
-                    'run': lambda v, l: self.play_cycles(v, l),
-                    'after': lambda v, _: v.cycle(self.cycle),
+                    'run': lambda v, l: self.play_cycles(v, l, reset_view=False),
+                    'after': lambda v, _: v.cycle(self.cycle, reset_view=False),
+                },
+                'f': { 'desc': 'Play and follow the view', 'ex': 'cf, cf10',
+                    'run': lambda v, l: self.play_cycles(v, l, reset_view=True),
+                    'after': lambda v, _: v.cycle(self.cycle, reset_view=True),
+                },
+            }},
+            'v': { 'desc': 'View mode', 'actions': {
+                'r': { 'desc': 'Reset view', 'ex': 'vr',
+                    'run': lambda v, _: v.reset_view(),
                 },
             }},
         }
@@ -70,14 +80,14 @@ class InlineCombination():
         self.cycle = cycle
 
 
-    def play_cycles(self, vis, ncycles_str=''):
+    def play_cycles(self, vis, ncycles_str='', reset_view=False):
         if ncycles_str:
             to_cycle = self.cycle + int(ncycles_str)
         else:
             to_cycle = self.ncycles
 
         for i in range(self.cycle, to_cycle):
-            vis.cycle(i)
+            vis.cycle(i, reset_view=reset_view)
 
 
     def mode(self, mode, mode_desc):

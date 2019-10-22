@@ -63,6 +63,44 @@ def _get_plot(pid):
     return plot
 
 
+def _get_current_view2d():
+    view = {}
+
+    attr = visit.GetView2D()
+    view['window_coords'] = attr.windowCoords
+    view['xscale'] = attr.xScale
+    view['yscale'] = attr.yScale
+
+    return view
+
+
+def _get_current_annotation():
+    annot = {}
+
+    attr = visit.GetAnnotationAttributes()
+    annot['xtitle'] = attr.axes2D.xAxis.title.title
+    annot['ytitle'] = attr.axes2D.yAxis.title.title
+    annot['xunit'] = attr.axes2D.xAxis.title.units
+    annot['yunit'] = attr.axes2D.yAxis.title.units
+    annot['color'] = attr.axes2D.xAxis.title.font.color
+    annot['bg'] = attr.backgroundColor
+    annot['fg'] = attr.foregroundColor
+
+    return annot
+
+
+def _get_current_curve():
+    curve = {}
+
+    attr = visit.GetViewCurve()
+    curve['domain_coords'] = attr.domainCoords
+    curve['range_coords'] = attr.rangeCoords
+    curve['domain_scale'] = attr.domainScale
+    curve['range_scale'] = attr.rangeScale
+
+    return curve
+
+
 def _get_window(wid):
     window = {}
 
@@ -87,6 +125,12 @@ def _get_window(wid):
     window['variables'] = vars
     window['extents'] = info.extents
     window['plots'] = {}
+
+    window['view'] = {
+        'annotation': _get_current_annotation(),
+        '2d': _get_current_view2d(),
+        'curve': _get_current_curve(),
+    }
 
     for pid in range(visit.GetNumPlots()):
         window['plots'][pid] = _get_plot(pid)
