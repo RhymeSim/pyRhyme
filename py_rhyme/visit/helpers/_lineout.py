@@ -4,27 +4,18 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-def _attr(p1, p2, cc, lw, cp):
+def _attr(p1, p2, cc, lw):
     """
     Parameter
     p1, p2: normalized (0 <= p1 <= 1) positions
     ls: line style: solid, dash, dot, dotdash
     cc: line color
     lw: line width
-    cp: convert_points
     """
     lo_attr = visit.LineoutAttributes()
 
-    if cp:
-        info = visit.GetWindowInformation()
-        md = visit.GetMetaData(info.activeSource)
-        offsets = md.GetMeshes(0).minSpatialExtents
-        lengths = [x - o for x, o in zip(md.GetMeshes(0).maxSpatialExtents, offsets)]
-        p1 = [p * l + o for p, l, o in zip(p1, lengths, offsets)]
-        p2 = [p * l + o for p, l, o in zip(p2, lengths, offsets)]
-
-    lo_attr.point1 = tuple(p1)
-    lo_attr.point2 = tuple(p2)
+    lo_attr.point1 = _normalized_position_to_real(p1)
+    lo_attr.point2 = _normalized_position_to_real(p2)
 
     lo_attr.interactive = 0
     lo_attr.ignoreGlobal = 0
@@ -77,3 +68,25 @@ def _check(p):
             return False
     else:
         return False
+
+
+def _normalized_position_to_real(point):
+    """
+    Parameter
+    point: Normalized position (w.r.t mesh dimensions)
+    """
+    md = visit.GetMetaData(visit.GetWindowInformation().activeSource)
+
+    offsets = md.GetMeshes(0).minSpatialExtents
+    lengths = [x - o for x, o in zip(md.GetMeshes(0).maxSpatialExtents, offsets)]
+
+    return tuple([p * l + o for p, l, o in zip(point, lengths, offsets)])
+
+
+def _real_position_to_normalized(point):
+    md = visit.GetMetaData(visit.GetWindowInformation().activeSource)
+
+    offsets = md.GetMeshes(0).minSpatialExtents
+    lengths = [x - o for x, o in zip(md.GetMeshes(0).maxSpatialExtents, offsets)]
+
+    return tuple([(p - o) / l for p, l, o in zip(point, lengths, offsets)])

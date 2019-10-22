@@ -1,4 +1,5 @@
 import os
+from . import _lineout
 
 
 try:
@@ -19,8 +20,8 @@ def _get_plot_operator(plot_obj, oid):
         operator['origin_percent'] = op.originPercent
         operator['axis_type'] = op.axisType
     elif operator['type'] == 'Lineout':
-        operator['point1'] = op.point1
-        operator['point2'] = op.point2
+        operator['point1'] = _lineout._real_position_to_normalized(op.point1)
+        operator['point2'] = _lineout._real_position_to_normalized(op.point2)
     else:
         raise RuntimeError('Unknow operator!', operator['type'])
 

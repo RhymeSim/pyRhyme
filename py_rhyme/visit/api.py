@@ -156,7 +156,7 @@ class VisItAPI:
 
 
     def lineout(self, variable, point1, point2, curve_color=(0, 0, 0, 255),
-        line_width=4, convert_points=True):
+        line_width=4):
         if re.match('^operators/Lineout/*.', variable):
             var = variable
         else:
@@ -165,8 +165,7 @@ class VisItAPI:
         if visit.AddPlot('Curve', var, 1, 1) != 1:
             raise RuntimeWarning('Unable to plot lineout!', variable)
 
-        la, ca = _lineout._attr(point1, point2, cc=curve_color, lw=line_width,
-            cp=convert_points)
+        la, ca = _lineout._attr(point1, point2, cc=curve_color, lw=line_width)
         visit.SetOperatorOptions(la)
         visit.SetPlotOptions(ca)
 
@@ -225,10 +224,8 @@ class VisItAPI:
                 cc = p['curve_color'] if curve_color is None else curve_color
                 p1 = p['operators'][0]['point1'] if point1 is None else point1
                 p2 = p['operators'][0]['point2'] if point2 is None else point2
-                cp = convert_points is not None else convert_points
 
-                self.lineout(var, p1, p2, curve_color=cc, line_width=lw,
-                    convert_points=)
+                self.lineout(var, p1, p2, curve_color=cc, line_width=lw)
 
 
     def line(self, p1=(0.75, 0.75), p2=(0.75, 0.75), width=1,
