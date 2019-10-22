@@ -21,10 +21,10 @@ class InlineCombination():
                     'run': lambda v, _: sys.exit(0),
                 },
                 'v': { 'desc': 'Run a VisIt command', 'ex': 'xvExpressions()',
-                    'run': lambda v, c: self.try_run_a_visit_command(c),
+                    'run': lambda v, c: self.try_run_visit_command(c),
                 },
                 'r': { 'desc': 'Run a VisItAPI command', 'ex': 'xrget_metadata(print_it=True)',
-                    'run': lambda v, c: self.try_run_a_visitapi_command(v, c),
+                    'run': lambda v, c: self.try_run_visitapi_command(v, c),
                 },
             }},
             'h': { 'desc': 'Help mode', 'actions': {
@@ -63,7 +63,7 @@ class InlineCombination():
                     'run': lambda v, l: self.play_cycles(v, l, reset_view=False),
                     'after': lambda v, _: v.cycle(self.cycle, reset_view=False),
                 },
-                'f': { 'desc': 'Play and follow the view', 'ex': 'cf, cf10',
+                'f': { 'desc': 'Play and reset the view', 'ex': 'cf, cf10',
                     'run': lambda v, l: self.play_cycles(v, l, reset_view=True),
                     'after': lambda v, _: v.cycle(self.cycle, reset_view=True),
                 },
@@ -195,7 +195,7 @@ class InlineCombination():
             self.handle(vis, combination_str)
 
 
-    def try_run_a_visit_command(self, command_str):
+    def try_run_visit_command(self, command_str):
         try:
             ret = eval("__import__('visit')." + str(command_str))
             self.pretty_print(ret)
@@ -203,7 +203,7 @@ class InlineCombination():
             print(err)
 
 
-    def try_run_a_visitapi_command(self, visitapi, command_str):
+    def try_run_visitapi_command(self, visitapi, command_str):
         if not re.match('.+\(.*\)$', command_str):
             print('Wrong command format!', command_str)
             return

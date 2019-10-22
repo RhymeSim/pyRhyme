@@ -18,13 +18,9 @@ except ImportError:
 
 
 class VisItAPI:
-    """
-    VisIt wrapper
-    """
 
     def __init__(self, interactive=True):
         """
-        Parameter
         interactive: If False, VisIt viewer will be shut down
         """
         if not interactive: visit.AddArgument("-nowin")
@@ -39,24 +35,30 @@ class VisItAPI:
     def open(self, path):
         _database._open(path)
 
+
     def cycle(self, c, reset_view=False):
         _database._change_state(c)
         if reset_view:
             self.reset_view()
 
+
     def next_cycle(self):
         visit.TimeSliderNextState()
 
+
     def prev_cycle(self):
         visit.TimeSliderPreviousState()
+
 
     def ncycles(self):
         info = visit.GetWindowInformation()
         return len(visit.GetMetaData(info.activeSource).cycles)
 
+
     def current_cycle(self):
         info = visit.GetWindowInformation()
         return info.timeSliderCurrentStates[info.activeTimeSlider]
+
 
     def time(self, t):
         wid = self.active_window_id()
@@ -66,12 +68,11 @@ class VisItAPI:
 
         self.cycle(cycle)
 
+
     def active_window_id(self):
         ga = visit.GetGlobalAttributes()
         return ga.windows[ga.activeWindow]
 
-    def windows(self):
-        return visit.GetGlobalAttributes().windows
 
     def new_window(self):
         if visit.AddWindow() != 1:
@@ -123,7 +124,6 @@ class VisItAPI:
 
     def slice(self, origin_type='Percent', percent=50, axis_type='ZAxis'):
         """
-        Parameter
         origin_type: Type of slicing (Intercept, Point, Percent, Zone, Node)
         percent: Argument of origin,
             Intercept: <Number>
@@ -170,12 +170,12 @@ class VisItAPI:
             raise RuntimeWarning('Unable to draw plots.')
 
         annot = _annotation._attr(xtitle, xunit, ytitle, yunit, color, bg, fg)
+        curve = _view._curve(xscale, yscale, xn=xmin, xx=xmax, yn=ymin, yx=ymax)
         view2d = _view._2d(xscale, yscale)
-        curve = _view._curve(xscale, yscale)
 
         visit.SetAnnotationAttributes(annot)
-        visit.SetView2D(view2d)
         visit.SetViewCurve(curve)
+        visit.SetView2D(view2d)
 
 
     def redraw(self, variable=None, scaling=None, zmin=None, zmax=None, ct=None,
@@ -192,6 +192,7 @@ class VisItAPI:
 
         if visit.DeleteActivePlots() != 1:
             raise RuntimeError('Unable to delete mesh plots!')
+
         if visit.DeleteAllPlots() != 1:
             raise RuntimeError('Unable to delete pseudocolor and contour plots')
 
@@ -302,7 +303,7 @@ class VisItAPI:
             return wmd
         else:
             if key not in wmd:
-                if rint_it: print('Unknow key! keys:', wmd.keys())
+                if print_it: print('Unknow key! keys:', wmd.keys())
                 return None
             else:
                 if print_it: print(wmd[key])
@@ -317,8 +318,3 @@ class VisItAPI:
         if print_it: pprint(md)
 
         return md
-
-
-    def close(self):
-        if visit.Close() != 1:
-            raise RuntimeError('Unable to close VisIt.')

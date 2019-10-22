@@ -48,4 +48,4 @@ package:
 ```
 
 Note, for each session, there is only one instance of visit module (I know!), so
-by importing VisIt python package, you can harvest the full capability of VisIt.
+by importing VisIt python package, you can harness the full capability of VisIt.

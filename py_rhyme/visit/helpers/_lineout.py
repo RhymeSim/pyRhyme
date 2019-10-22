@@ -9,8 +9,6 @@ def _attr(p1, p2):
     Parameter
     p1, p2: normalized (0 <= p1 <= 1) positions
     ls: line style: solid, dash, dot, dotdash
-    cc: line color
-    lw: line width
     """
     attr = visit.LineoutAttributes()
 
@@ -27,16 +25,13 @@ def _attr(p1, p2):
 
 
 def _check(p):
-    if 'type' in p and p['type'] == 'Curve':
-        if 0 in p['operators']:
-            if 'type' in p['operators'][0] and p['operators'][0]['type'] == 'Lineout':
-                return True
-            else:
-                return False
-        else:
-            return False
-    else:
-        return False
+    if 'type' in p and p['type'] == 'Curve' \
+        and 'operators' in p and 0 in p['operators'] \
+        and 'type' in p['operators'][0] \
+        and p['operators'][0]['type'] == 'Lineout':
+        return True
+
+    return False
 
 
 def _normalized_position_to_real(point):
