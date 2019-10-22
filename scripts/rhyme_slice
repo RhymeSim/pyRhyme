@@ -16,18 +16,17 @@ def main():
     parser.add_argument('-c', '--colortable', help='Pseudocolor colortable', type=str, default='RdYlBu')
     parser.add_argument('-i', '--invert', help='Inverting pseudocolor colortable', action='store_false')
     parser.add_argument('-a', '--axis', help='Slicing axis', choices=['x', 'y', 'z'], type=str, default='z')
-    parser.add_argument('-p', '--percent', help='Slicing layer (percent)', type=int, default=50)
+    parser.add_argument('-p', '--origin-percent', help='Slicing layer (percent)', type=int, default=50)
     parser.add_argument('--commands', help='Comma separated list of inline commands', type=str, default='')
 
     args = parser.parse_args()
-    axis_type = 'ZAxis' if args.axis == 'z' else ('YAxis' if args.axis == 'y' else 'XAxis')
 
 
     v = Vis()
     v.open(args.chombo_path)
     v.pseudocolor(args.var, scaling=args.scaling, zmin=args.min, zmax=args.max,
         ct=args.colortable, invert_ct=args.invert)
-    v.slice(origin_type='Percent', percent=args.percent, axis_type=axis_type)
+    v.slice(origin_type='Percent', origin_percent=args.origin_percent, axis_type=args.axis)
     v.draw()
     v.reset_view()
 
@@ -41,7 +40,8 @@ def main():
     combs.action('p', 'l', 'Set range lower bound', 'pl3.14e5', lambda v, l: v.redraw(zmin=float(l)))
 
     combs.mode('s', 'Slice mode')
-    combs.action('s', 'l', 'Change layer (%)', 'sl25', lambda v, l: v.redraw(percent=int(l)))
+    combs.action('s', 'l', 'Change layer (%)', 'sl25', lambda v, l: v.redraw(origin_percent=int(l)))
+    combs.action('s', 'a', 'Change axis', 'say', lambda v, a: v.redraw(axis_type=str(a)))
 
 
     if len(args.commands) > 0:

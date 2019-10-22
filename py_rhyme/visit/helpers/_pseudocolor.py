@@ -50,3 +50,21 @@ def _set_colortable(ct, scaling, invert=0):
 
 def _check(plot_obj):
     return True if 'type' in plot_obj and plot_obj['type'] == 'Pseudocolor' else False
+
+
+def _kwargs(p, v, s, zmin, zmax, ct):
+    """
+    p: plot object
+    v: variable
+    s: scaling
+    zmin, zmax
+    ct: color table
+    """
+    return {
+        'variable': v if v is not None else p['variable'],
+        'scaling': s if s is not None else p['scaling'],
+        'zmin': zmin if zmin is not None else p['min'],
+        'zmax': zmax if zmax is not None else p['max'],
+        'ct': ct if ct is not None else p['ct'],
+        'invert_ct': p['invert_ct'],
+    }

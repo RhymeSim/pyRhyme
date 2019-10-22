@@ -79,12 +79,12 @@ class VisItAPI:
             raise RuntimeWarning('Unable to create a new window!')
 
 
-    def pseudocolor(self, var, scaling='log', zmin=None, zmax=None,
+    def pseudocolor(self, variable='rho', scaling='log', zmin=None, zmax=None,
         ct='RdYlBu', invert_ct=0):
-        if visit.AddPlot( 'Pseudocolor', var, 1, 1 ) != 1:
+        if visit.AddPlot('Pseudocolor', variable, 1, 1) != 1:
             raise RuntimeWarning('Unable to add Pseudocolor plot.')
 
-        psa = _pseudocolor._attr(var, scaling, zmin, zmax, ct, invert_ct)
+        psa = _pseudocolor._attr(variable, scaling, zmin, zmax, ct, invert_ct)
         visit.SetPlotOptions(psa)
 
 
@@ -122,26 +122,16 @@ class VisItAPI:
         return None
 
 
-    def slice(self, origin_type='Percent', percent=50, axis_type='ZAxis'):
-        """
-        origin_type: Type of slicing (Intercept, Point, Percent, Zone, Node)
-        percent: Argument of origin,
-            Intercept: <Number>
-            Point: <list Number, Number, Number>
-            Percent: <Number>
-            Zone: <Number>
-            Node: <Number>
-        axis_type: XAxis, YAxis, ZAxis
-        """
+    def slice(self, origin_type='Percent', origin_percent=50, axis_type='z'):
         if visit.AddOperator('Slice', 0) != 1:
             raise RuntimeWarning('Unable to add Slice operator')
 
-        sa = _slice._attr(origin_type, percent, axis_type)
+        sa = _slice._attr(origin_type, origin_percent, axis_type)
         visit.SetOperatorOptions(sa)
 
 
-    def lineout(self, variable, point1, point2, curve_color=(0, 0, 0, 255),
-        line_width=4):
+    def lineout(self, variable='rho', point1=(0, .5, .5), point2=(1, .5, .5),
+        curve_color=(0, 0, 0, 255), line_width=4):
         if re.match('^operators/Lineout/*.', variable):
             var = variable
         else:
@@ -179,7 +169,7 @@ class VisItAPI:
 
 
     def redraw(self, variable=None, scaling=None, zmin=None, zmax=None, ct=None,
-        origin_type=None, percent=None, axis_type=None, line_width=None,
+        origin_type=None, origin_percent=None, axis_type=None, line_width=None,
         curve_color=None, point1=None, point2=None, convert_points=None,
         xtitle=None, ytitle=None, xunit=None, yunit=None,
         xscale=None, yscale=None, color=None, bg=None, fg=None):
@@ -196,52 +186,32 @@ class VisItAPI:
         if visit.DeleteAllPlots() != 1:
             raise RuntimeError('Unable to delete pseudocolor and contour plots')
 
-        for p in md['windows'][wid]['plots'].values():
-            if _pseudocolor._check(p):
-                var = p['variable'] if variable is None else variable
-                sc = p['scaling'] if scaling is None else scaling
-                zmn = p['min'] if zmin is None else zmin
-                zmx = p['max'] if zmax is None else zmax
-                ct = p['ct'] if ct is None else ct
+        plots = md['windows'][wid]['plots']
+        view = md['windows'][wid]['view']
 
-                self.pseudocolor(var, scaling=sc, zmin=zmn, zmax=zmx,
-                    ct=ct, invert_ct=p['invert_ct'])
+        for p in plots.values():
+            if _pseudocolor._check(p):
+                kwargs = _pseudocolor._kwargs(p, variable, scaling, zmin, zmax, ct)
+                self.pseudocolor(**kwargs)
 
                 for o in p['operators'].values():
                     if _slice._check(o):
-                        ot = o['origin_type'] if origin_type is None else origin_type
-                        p = o['origin_percent'] if percent is None else percent
-                        at = o['axis_type'] if axis_type is None else axis_type
-                        self.slice(origin_type=ot, percent=p, axis_type=at)
+                        kwargs = _slice._kwargs(o, origin_type, origin_percent, axis_type)
+                        self.slice(**kwargs)
 
-                v = md['windows'][wid]['view']['2d']
-                a = md['windows'][wid]['view']['annotation']
+                v, a = view['2d'], view['annotation']
 
             elif _lineout._check(p):
-                var = p['variable'] if variable is None else variable
-                lw = p['line_width'] if line_width is None else line_width
-                cc = p['curve_color'] if curve_color is None else curve_color
-                p1 = p['operators'][0]['point1'] if point1 is None else point1
-                p2 = p['operators'][0]['point2'] if point2 is None else point2
-
-                self.lineout(var, p1, p2, curve_color=cc, line_width=lw)
-
-                v = md['windows'][wid]['view']['curve']
-                a = md['windows'][wid]['view']['annotation']
+                kwargs = _lineout._kwargs(p, variable, point1, point2, line_width, curve_color)
+                self.lineout(**kwargs)
+                v, a = view['curve'], view['annotation']
 
             else:
                 raise RuntimeError('Unknown plot!', p)
 
-
-            self.draw(xtitle=a['xtitle'] if xtitle is None else xtitle,
-                ytitle=a['ytitle'] if ytitle is None else ytitle,
-                xunit=a['xunit'] if xunit is None else xunit,
-                yunit=a['yunit'] if yunit is None else yunit,
-                xscale=v['xscale'] if xscale is None else xscale,
-                yscale=v['yscale'] if yscale is None else yscale,
-                color=a['color'] if color is None else color,
-                bg=a['bg'] if bg is None else bg,
-                fg=a['fg'] if fg is None else fg)
+        kwargs = _view._kwargs(a, v, xtitle, ytitle, xunit, yunit,
+            xscale, yscale, color, bg, fg)
+        self.draw(**kwargs)
 
 
     def line(self, p1=(0.75, 0.75), p2=(0.75, 0.75), width=1,

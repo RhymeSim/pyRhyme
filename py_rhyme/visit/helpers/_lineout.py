@@ -54,3 +54,23 @@ def _real_position_to_normalized(point):
     lengths = [x - o for x, o in zip(md.GetMeshes(0).maxSpatialExtents, offsets)]
 
     return tuple([(p - o) / l for p, l, o in zip(point, lengths, offsets)])
+
+
+def _kwargs(p, v, p1, p2, lw, cc):
+    """
+    p: plot object
+    v: variable
+    lw: line width
+    cc: curve color
+    p1, p2: point 1 & 2
+    """
+    if 'operators' not in p or 0 not in p['operators']:
+        raise RuntimeError('Wrong plot object!', p)
+
+    return {
+        'variable': v if v is not None else p['variable'],
+        'point1': p1 if p1 is not None else p['operators'][0]['point1'],
+        'point2': p2 if p2 is not None else p['operators'][0]['point2'],
+        'line_width': lw if lw is not None else p['line_width'],
+        'curve_color': cc if cc is not None else p['curve_color'],
+    }

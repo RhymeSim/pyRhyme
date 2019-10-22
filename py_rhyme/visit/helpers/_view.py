@@ -68,6 +68,28 @@ def _curve(ds, rs, xn=None, xx=None, yn=None, yx=None):
     return attr
 
 
+def _kwargs(a, v, xt, yt, xu, yu, xs, ys, c, bg, fg):
+    """
+    a: annotation object
+    v: view object (e.g. curve, 2d, ...)
+    xt, yt: axis title
+    xu, tu: axis unit
+    xs, ys: axis scaling
+    c, bg, fg: color, background, foreground
+    """
+    return {
+        'xtitle': xt if xt is not None else a['xtitle'],
+        'ytitle': yt if yt is not None else a['ytitle'],
+        'xunit': xu if xu is not None else a['xunit'],
+        'yunit': yu if yu is not None else a['yunit'],
+        'xscale': xs if xs is not None else v['xscale'],
+        'yscale': ys if ys is not None else v['yscale'],
+        'color': c if c is not None else a['color'],
+        'bg': bg if bg is not None else a['bg'],
+        'fg': fg if fg is not None else a['fg'],
+    }
+
+
 def __get_scaling(scale, linear=0, log=1):
     if type(scale) is str:
         if scale.lower() == 'log':
