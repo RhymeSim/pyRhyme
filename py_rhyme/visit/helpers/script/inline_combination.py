@@ -16,30 +16,28 @@ class InlineCombination():
         self.ncycles = int(ncycles)
 
         self.modes = {
-            'x': { 'desc': 'Command mode', 'actions': {
+            'q': { 'desc': 'Command mode', 'actions': {
                 'q': { 'desc': 'Quit', 'ex': 'xq',
                     'run': lambda v, _: sys.exit(0),
                 },
-                'v': { 'desc': 'Run a VisIt command', 'ex': 'xvExpressions()',
-                    'run': lambda v, c: self.try_run_visit_command(c),
+                'r': { 'desc': 'Run a VisItAPI or VisIt command', 'ex': 'xvreset_view(), xvExpressions()',
+                    'run': lambda v, c: self.try_run_a_command(v, c),
                 },
-                'r': { 'desc': 'Run a VisItAPI command', 'ex': 'xrget_metadata(print_it=True)',
-                    'run': lambda v, c: self.try_run_visitapi_command(v, c),
+                'v': { 'desc': 'Reset view', 'ex': 'vr',
+                    'run': lambda v, _: v.reset_view(),
                 },
             }},
             'h': { 'desc': 'Help mode', 'actions': {
                 'u': { 'desc': 'Print usage', 'ex': 'hu',
                     'run': lambda v, _: self.usage(),
                 },
-            }},
-            'i': { 'desc': 'Info mode', 'actions': {
-                'a': { 'desc': 'All windows', 'ex': 'ia',
+                'm': { 'desc': 'Print metadata', 'ex': 'ia',
                     'run': lambda v, _: v.get_metadata(print_it=True),
                 },
-                'w': { 'desc': 'Current woindow', 'ex': 'iw, iwcycle',
+                'w': { 'desc': 'Print current woindow info', 'ex': 'iw, iwcycle',
                     'run': lambda v, k: v.get_window_metadata(print_it=True, key=k),
                 },
-                'v': { 'desc': 'Valid variables', 'ex': 'iv',
+                'v': { 'desc': 'Print valid variables', 'ex': 'iv',
                     'run': lambda v, _: v.get_window_metadata(print_it=True, key='variables'),
                 },
             }},
@@ -71,26 +69,31 @@ class InlineCombination():
                     'after': lambda v, _: v.cycle(self.cycle, reset_view=True),
                 },
             }},
-            'v': { 'desc': 'View mode', 'actions': {
-                'r': { 'desc': 'Reset view', 'ex': 'vr',
-                    'run': lambda v, _: v.reset_view(),
-                },
-                'x': { 'desc': 'Update x-axis title', 'ex': 'vxPos X',
-                    'run': lambda v, t: v.redraw(xtitle=str(t)),
-                    'after': lambda v, _: v.reset_view(),
-                },
-                'y': { 'desc': 'Update y-axis title', 'ex': 'vyPos Y',
-                    'run': lambda v, t: v.redraw(ytitle=str(t)),
-                    'after': lambda v, _: v.reset_view(),
-                },
-            }},
-            'u': { 'desc': 'Unit mode', 'actions': {
-                'x': { 'desc': 'Update x-axis unit', 'ex': 'uxMpc',
+            'x': { 'desc': 'X-axis mode', 'actions': {
+                'u': { 'desc': 'Update unit', 'ex': 'xuMpc',
                     'run': lambda v, u: v.redraw(xunit=str(u)),
                     'after': lambda v, _: v.reset_view(),
                 },
-                'y': { 'desc': 'Update y-axis unit', 'ex': 'uyMpc',
+                't': { 'desc': 'Update title', 'ex': 'xtPosition X',
+                    'run': lambda v, t: v.redraw(xtitle=str(t)),
+                    'after': lambda v, _: v.reset_view(),
+                },
+                's': { 'desc': 'Update scaling', 'ex': 'xslinear',
+                    'run': lambda v, s: v.redraw(xscale=str(s)),
+                    'after': lambda v, _: v.reset_view(),
+                },
+            }},
+            'y': { 'desc': 'Y-axis mode', 'actions': {
+                'u': { 'desc': 'Update unit', 'ex': 'yuMpc',
                     'run': lambda v, u: v.redraw(yunit=str(u)),
+                    'after': lambda v, _: v.reset_view(),
+                },
+                't': { 'desc': 'Update title', 'ex': 'ytPosition Y',
+                    'run': lambda v, t: v.redraw(ytitle=str(t)),
+                    'after': lambda v, _: v.reset_view(),
+                },
+                's': { 'desc': 'Update scaling', 'ex': 'yslog',
+                    'run': lambda v, s: v.redraw(yscale=str(s)),
                     'after': lambda v, _: v.reset_view(),
                 },
             }},
@@ -198,27 +201,36 @@ class InlineCombination():
             self.handle(vis, combination_str)
 
 
-    def try_run_visit_command(self, command_str):
-        try:
-            ret = eval("__import__('visit')." + str(command_str))
-            self.pretty_print(ret)
-        except Exception as err:
-            print(err)
+    def try_run_a_command(self, visitapi, command_str):
+        # Have you ever seen something more unsage than this?! Wow..
 
-
-    def try_run_visitapi_command(self, visitapi, command_str):
-        if not re.match('.+\(.*\)$', command_str):
-            print('Wrong command format!', command_str)
+        if not command_str:
+            print('No command is given!')
             return
 
-        method_name = re.split('\(|\)', command_str)[0]
-        args = re.split('\(|\)', command_str)[1]
+        if re.match('.+\(.*\)$', command_str):
+            method_name = re.split('\(|\)', command_str)[0]
+            args = re.split('\(|\)', command_str)[1]
+        else:
+            method_name = 'non_existing_method_name'
+            args = ''
 
+        # VisItAPPI Command
         try:
             ret = eval("getattr(visitapi, '" + method_name + "')(" + args + ")")
             self.pretty_print(ret)
         except Exception as err:
-            print(err)
+            # VisIt Command
+            try:
+                ret = eval("__import__('visit')." + command_str)
+                self.pretty_print(ret)
+            except Exception as err:
+                # Python Command
+                try:
+                    ret = eval(str(command_str))
+                    self.pretty_print(ret)
+                except Exception as err:
+                    print(err)
 
 
     def pretty_print(self, v):

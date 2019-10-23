@@ -10,7 +10,7 @@ def main():
     parser.add_argument('chombo_path', help='Path to a Rhyme chombo file', type=str)
 
     parser.add_argument('-v', '--var', help='Plotting variable', type=str, default='rho')
-    parser.add_argument('-s', '--scaling', help='Pseudocolor plot scaling', choices=['linear', 'log'], type=str, default='log')
+    parser.add_argument('-s', '--scaling', help='Pseudocolor plot scaling', choices=['linear', 'log'], type=str, default='linear')
     parser.add_argument('--min', help='Pseudocolor minimum value', type=float, default=None)
     parser.add_argument('--max', help='Pseudocolor maximum value', type=float, default=None)
     parser.add_argument('-c', '--colortable', help='Pseudocolor colortable', type=str, default='RdYlBu')

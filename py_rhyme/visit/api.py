@@ -147,7 +147,11 @@ class VisItAPI:
         visit.SetPlotOptions(ca)
 
 
-    def reset_view(self):
+    def reset_view(self, draw_it=False):
+        if draw_it:
+            if visit.DrawPlots() != 1:
+                raise RuntimeWarning('Unable to draw plots.')
+
         if visit.ResetView() != 1:
             raise RuntimeWarning('Unable to reset the view!')
 
@@ -173,6 +177,7 @@ class VisItAPI:
         curve_color=None, point1=None, point2=None, convert_points=None,
         xtitle=None, ytitle=None, xunit=None, yunit=None,
         xscale=None, yscale=None, color=None, bg=None, fg=None):
+        # TODO: Need to be refactored into separate methods (replotting, redraw)
 
         wid = self.active_window_id()
         md = self.get_metadata()
@@ -212,6 +217,11 @@ class VisItAPI:
         kwargs = _view._kwargs(a, v, xtitle, ytitle, xunit, yunit,
             xscale, yscale, color, bg, fg)
         self.draw(**kwargs)
+
+
+    def change_variable(self, variable):
+        if visit.ChangeActivePlotsVar(variable) != 1:
+            raise RuntimeError('Unable to change active plot variables!', variable)
 
 
     def line(self, p1=(0.75, 0.75), p2=(0.75, 0.75), width=1,

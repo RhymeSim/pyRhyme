@@ -48,6 +48,10 @@ def _change_state(state):
 
 
 def _expressions(vars):
+    for v in vars:
+        visit.DefineScalarExpression(v + '.', __dot_expr(v))
+        visit.DefineScalarExpression(v + '..', __ddot_expr(v))
+
     if 'rho' not in vars:
         return
 
@@ -72,3 +76,13 @@ def _expressions(vars):
     visit.DefineScalarExpression('p_mon', 'e_int * (5.0/3 - 1)')
     visit.DefineScalarExpression('p_di', 'e_int * (7.0/5 - 1)')
     visit.DefineScalarExpression('p', 'p_mon')
+
+
+def __dot_expr(v):
+    return '(<' + v + '> - pos_cmfe(<[-1]id:' + v + '>, Mesh, 0.)) ' \
+        + '/ (<time_derivative/Mesh_time> - <time_derivative/Mesh_lasttime>)'
+
+def __ddot_expr(v):
+    return '(pos_cmfe(<[1]id:' + v + '>, Mesh, 0.) - 2 * <' + v + '> ' \
+        + '+ pos_cmfe(<[-1]id:' + v + '>, Mesh, 0.)) ' \
+        + '/ (<time_derivative/Mesh_time> - <time_derivative/Mesh_lasttime>)^2'
