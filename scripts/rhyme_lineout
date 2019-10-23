@@ -36,6 +36,8 @@ def main():
     combs.action('p', '1', 'Change 1st point', 'p1(0, .5 .5)', lambda v, p: v.redraw(point1=eval(p)), after=lambda v, _: v.reset_view())
     combs.action('p', '2', 'Change 2nd point', 'p2(1, .5 .5)', lambda v, p: v.redraw(point2=eval(p)), after=lambda v, _: v.reset_view())
     combs.action('p', 'a', 'Add a new lineout', 'pae_tot', lambda o, v: o.lineout(str(v), **settings), after=lambda v, _: v.reset_view(draw_it=True))
+    combs.action('p', 'r', 'Remove a plot', 'pr0', lambda v, i: v.delete_plot(int(i)), after=lambda v, _: v.reset_view())
+    combs.action('p', 'q', 'Query the curve', 'pqMinMax', lambda v, q: v.curve_query(q, print_it=True))
 
 
     if len(args.commands) > 0:

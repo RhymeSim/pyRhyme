@@ -45,3 +45,53 @@ def _attr(lw, cc):
 
 def _check(plot_obj):
     return True if 'type' in plot_obj and plot_obj['type'] == 'Curve' else False
+
+
+def _query(q='MinMax', rmin=None, rmax=None):
+    """
+    rmin, rmax: minimum and maximum of domain of interest
+    """
+    queries = ['MinMax']
+    result = {}
+
+    if type(q) is not str:
+        print('Only string queries can be processed!')
+        return result
+
+    for i in range(visit.GetNumPlots()):
+        visit.SetActivePlots(i)
+        info = visit.GetPlotInformation()
+
+        if 'Curve' in info:
+            x, y = __cut_curve_values(info['Curve'], rmin, rmax)
+
+            if q.lower() == 'minmax':
+                imin = y.index(min(y))
+                imax = y.index(max(y))
+                result[i] = {
+                    'min': (x[imin], y[imin]), 'max': (x[imax], y[imax])
+                }
+            else:
+                print('Unknown query!', q)
+                print('Use these queries:', queries)
+
+    return result
+
+
+def __cut_curve_values(curve, rmin, rmax):
+    x = curve[::2]
+    y = curve[1::2]
+
+    if rmin is not None and rmax is not None:
+        if rmin > rmax:
+            raise RuntimeError('rmax must be greater than rmin')
+
+    i, j = 0, len(x)
+
+    if rmin is not None and rmin > x[0]:
+        i = [p[0] for p in enumerate(x) if p[1] > rmin][0]
+
+    if rmax is not None and rmax > x[0]:
+        j = [p[0] for p in enumerate(x) if p[1] < rmax][-1] + 1
+
+    return x[i:j], y[i:j]

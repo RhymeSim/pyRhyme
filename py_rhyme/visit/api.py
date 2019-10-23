@@ -1,5 +1,4 @@
 import time, copy, os, re
-from pprint import pprint
 
 from .helpers import _pseudocolor
 from .helpers import _curve
@@ -10,6 +9,7 @@ from .helpers import _database
 from .helpers import _metadata
 from .helpers import _lineout
 from .helpers import _annotation
+from .helpers import _save
 
 try:
     import visit
@@ -147,6 +147,14 @@ class VisItAPI:
         visit.SetPlotOptions(ca)
 
 
+    def curve_query(self, q='MinMax', min_range=None, max_range=None, print_it=False):
+        result = _curve._query(q, rmin=min_range, rmax=max_range)
+        if print_it:
+            print(result)
+
+        return result
+
+
     def reset_view(self, draw_it=False):
         if draw_it:
             if visit.DrawPlots() != 1:
@@ -224,6 +232,15 @@ class VisItAPI:
             raise RuntimeError('Unable to change active plot variables!', variable)
 
 
+    def delete_plot(self, plot_id):
+        if visit.SetActivePlots(plot_id) != 1:
+            print('Plot with id', plot_id, 'does not exists.')
+            return
+
+        if visit.DeleteActivePlots() != 1:
+            raise RuntimeError('Unable to delete plot', plot_id)
+
+
     def line(self, p1=(0.75, 0.75), p2=(0.75, 0.75), width=1,
         color=(0, 0, 0, 255), opacity=255, begin_arrow=0, end_arrow=0):
         ao = new_line(p1, p2, width, color, opacity, begin_arrow, end_arrow)
@@ -279,7 +296,8 @@ class VisItAPI:
         wmd = _metadata._get_window(self.active_window_id())
 
         if key is None:
-            if print_it: pprint(wmd)
+            if print_it:
+                print(wmd)
             return wmd
         else:
             if key not in wmd:
@@ -295,6 +313,16 @@ class VisItAPI:
         md = _metadata._get()
         visit.SetActiveWindow(wid)
 
-        if print_it: pprint(md)
+        if print_it:
+            print(md)
 
         return md
+
+
+    def save(self, dir='./', width_in=6, height_in=6, dpi=300):
+        w = self.get_window_metadata()
+
+        atts = _save._attr(dir, w['id'], w['cycle'], width_in, height_in, dpi)
+        visit.SetSaveWindowAttributes(atts)
+
+        visit.SaveWindow()

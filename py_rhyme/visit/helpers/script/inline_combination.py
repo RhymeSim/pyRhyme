@@ -1,5 +1,4 @@
 import sys, re
-from pprint import pprint
 
 try:
     from visit import *
@@ -25,6 +24,9 @@ class InlineCombination():
                 },
                 'v': { 'desc': 'Reset view', 'ex': 'vr',
                     'run': lambda v, _: v.reset_view(),
+                },
+                's': { 'desc': 'Save window', 'ex': 'qs',
+                    'run': lambda v, d: v.save(dir=d),
                 },
             }},
             'h': { 'desc': 'Help mode', 'actions': {

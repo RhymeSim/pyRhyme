@@ -38,6 +38,7 @@ def main():
     combs.action('p', 'v', 'Change variable', 'pve_tot', lambda o, v: o.redraw(variable=str(v)))
     combs.action('p', 'u', 'Set range upper bound', 'pu3.14e5', lambda v, u: v.redraw(zmax=float(u)))
     combs.action('p', 'l', 'Set range lower bound', 'pl3.14e5', lambda v, l: v.redraw(zmin=float(l)))
+    combs.action('p', 'r', 'Remove a plot', 'pr0', lambda v, i: v.delete_plot(int(i)), after=lambda v, _: v.reset_view())
 
     combs.mode('s', 'Slice mode')
     combs.action('s', 'l', 'Change layer (%)', 'sl25', lambda v, l: v.redraw(origin_percent=int(l)))
