@@ -217,24 +217,14 @@ class InlineCombination():
 
         # VisItAPPI Command
         try:
-            ret = eval("getattr(visitapi, '" + method_name + "')(" + args + ")")
-            self.pretty_print(ret)
+            print(eval("getattr(visitapi, '" + method_name + "')(" + args + ")"))
         except Exception as err:
             # VisIt Command
             try:
-                ret = eval("__import__('visit')." + command_str)
-                self.pretty_print(ret)
+                print(eval("__import__('visit')." + command_str))
             except Exception as err:
                 # Python Command
                 try:
-                    ret = eval(str(command_str))
-                    self.pretty_print(ret)
+                    print(eval(str(command_str)))
                 except Exception as err:
                     print(err)
-
-
-    def pretty_print(self, v):
-        if type(v) in [dict, list, tuple]:
-            pprint(v)
-        else:
-            print(v)
