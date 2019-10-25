@@ -126,3 +126,6 @@ dmypy.json
 
 # Chombo test file
 *.chombo.h5
+
+# VisIt
+visitlog.py

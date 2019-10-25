@@ -322,7 +322,8 @@ class VisItAPI:
     def save(self, dir='./', width_in=6, height_in=6, dpi=300):
         w = self.get_window_metadata()
 
-        atts = _save._attr(dir, w['id'], w['cycle'], width_in, height_in, dpi)
+        atts = _save._attr(dir, w['id'], w['plots'][0]['variable'],
+            w['cycle'], w['times'][w['cycle']], width_in, height_in, dpi)
         visit.SetSaveWindowAttributes(atts)
 
         visit.SaveWindow()

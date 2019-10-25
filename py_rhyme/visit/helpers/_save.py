@@ -4,11 +4,12 @@ except ImportError:
     raise RuntimeError('Unable to import VisIt!')
 
 
-def _attr(d, id, c, w_in, h_in, dpi):
+def _attr(d, id, v, c, t, w_in, h_in, dpi):
     """
     d: directory
     id: unique version id string
-    c: cycle
+    c, t: cycle, time
+    v: variable name
     w_in, h_in: width, height in inch
     dpi: dot per inch
     """
@@ -19,9 +20,9 @@ def _attr(d, id, c, w_in, h_in, dpi):
         attr.outputDirectory = d
     else:
         attr.outputToCurrentDirectory = 1
-        attr.outputDirectory = "."
+        attr.outputDirectory = "./"
 
-    attr.fileName = __filename(id, c)
+    attr.fileName = __filename(id, v, c, t)
     attr.format = attr.PNG
     attr.family = 0
     attr.width = w_in * dpi
@@ -32,5 +33,5 @@ def _attr(d, id, c, w_in, h_in, dpi):
     return attr
 
 
-def __filename(id, c):
-    return id + '_' + ('%05d' % c)
+def __filename(id, v, c, t):
+    return '{:s}_{:s}_{:05d}_{:.2e}'.format(id, v, c, t)

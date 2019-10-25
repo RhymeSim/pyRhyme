@@ -1,4 +1,4 @@
-import sys, re
+import sys, re, StringIO, contextlib
 
 try:
     from visit import *
@@ -70,6 +70,10 @@ class InlineCombination():
                     'run': lambda v, l: self.play_cycles(v, l, reset_view=True),
                     'after': lambda v, _: v.cycle(self.cycle, reset_view=True),
                 },
+                'r': { 'desc': 'Record snapshots', 'ex': 'cr, cr10',
+                    'run': lambda v, l: self.play_cycles(v, l, reset_view=True, save_it=True),
+                    'after': lambda v, _: v.cycle(self.cycle, reset_view=True),
+                },
             }},
             'x': { 'desc': 'X-axis mode', 'actions': {
                 'u': { 'desc': 'Update unit', 'ex': 'xuMpc',
@@ -109,7 +113,7 @@ class InlineCombination():
         self.cycle = cycle
 
 
-    def play_cycles(self, vis, ncycles_str='', reset_view=False):
+    def play_cycles(self, vis, ncycles_str='', reset_view=False, save_it=False):
         if ncycles_str:
             to_cycle = self.cycle + int(ncycles_str)
         else:
@@ -117,6 +121,8 @@ class InlineCombination():
 
         for i in range(self.cycle, to_cycle):
             vis.cycle(i, reset_view=reset_view)
+            if save_it:
+                vis.save()
 
 
     def mode(self, mode, mode_desc):
@@ -162,7 +168,7 @@ class InlineCombination():
 
         mode = command_str[0]
         action = command_str[1]
-        value = command_str[2:] if len(command_str) > 2 else None
+        value = command_str[2:].strip() if len(command_str) > 2 else None
 
         if mode not in self.modes:
             print('Unknown mode:', mode)
@@ -217,16 +223,35 @@ class InlineCombination():
             method_name = 'non_existing_method_name'
             args = ''
 
-        # VisItAPPI Command
+
+        errors = []
+
         try:
+            # VisItAPI Command
             print(eval("getattr(visitapi, '" + method_name + "')(" + args + ")"))
         except Exception as err:
-            # VisIt Command
             try:
+                # VisIt Command
                 print(eval("__import__('visit')." + command_str))
             except Exception as err:
-                # Python Command
+                errors.append(err)
                 try:
-                    print(eval(str(command_str)))
+                    # Python Command -- exec
+                    with stdoutIO() as s:
+                        exec(str(command_str))
+
+                    print s.getvalue()
                 except Exception as err:
-                    print(err)
+                    errors.append(err)
+                    for e in errors:
+                        print e
+
+
+@contextlib.contextmanager
+def stdoutIO(stdout=None):
+    sysstdout = sys.stdout
+    if stdout is None:
+        stdout = StringIO.StringIO()
+    sys.stdout = stdout
+    yield stdout
+    sys.stdout = sysstdout
