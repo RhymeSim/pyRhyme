@@ -247,6 +247,8 @@ class VisItAPI:
 
 
     def query(self, q=''):
+        # https://www.visitusers.org/index.php?title=Built-in-Queries
+        # Query("Max", use_actual_data=1)
         queries = visit.Queries()
 
         if q in queries:
