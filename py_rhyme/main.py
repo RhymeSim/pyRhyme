@@ -12,5 +12,8 @@ class PyRhyme:
         - opening a dataset
         - loading the specified chombo file
         """
-
         self.d = _dataset._open(path)
+
+
+    def lineout(self, p1, p2):
+        pass
