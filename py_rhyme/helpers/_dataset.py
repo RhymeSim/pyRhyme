@@ -10,7 +10,6 @@ def _open(path):
         'info': {
             'num_of_files': 1,
         },
-        'h5': {}
     }
 
     matches = re.findall('[0-9]{5}', path)
@@ -24,13 +23,13 @@ def _open(path):
         dataset[i]['path'] = p
         dataset[i]['opened'] = False
 
-    dataset[iopen]['h5'] = __open_individual_h5(path)
+    dataset[iopen]['h5'] = _open_individual_h5(path)
     dataset[iopen]['opened'] = True
 
     return dataset
 
 
-def __open_individual_h5(path):
+def _open_individual_h5(path):
     h5 = {}
 
     f = h5py.File(path, 'r')
@@ -47,7 +46,7 @@ def __read_attributes(f):
 
     h5_atts = f['/'].attrs
 
-    atts['ProblemDomain'] = str(h5_atts.get('ProblemDomain'))
+    atts['ProblemDomain'] = tuple(map(lambda x: int(x), h5_atts.get('ProblemDomain')))
     ncomp = atts['num_components'] = int(h5_atts.get('num_components'))
     atts['num_levels'] = int(h5_atts.get('num_levels'))
     atts['iteration'] = int(h5_atts.get('iteration'))
@@ -83,7 +82,7 @@ def __read_level(f, l):
 
 
     level['data'] = h5_level['data:datatype=0']
-    level['data_len'] = len(level['data']) / ncomp
+    level['len_data'] = len(level['data']) / ncomp
 
     level['boxes'] = {}
 
@@ -91,7 +90,7 @@ def __read_level(f, l):
     for bi, b in enumerate(h5_level['boxes']):
         level['boxes'][bi] = {
             'corner': tuple(map(lambda x: int(x), b)),
-            'offset': [level['data_len'] * i + offset for i in range(ncomp)]
+            'offset': [level['len_data'] * i + offset for i in range(ncomp)]
         }
 
         bl = [b[i+3] - b[i] + 1 for i in range(3)]
