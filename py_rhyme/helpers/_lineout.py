@@ -15,7 +15,7 @@ def _sample(p0, p1, grid, dx, sampling=1024):
     dx: cell sizes of the uniform grid
     sampling: number of dots for sampling the line
     """
-    sample = { 'len': sampling }
+    sample = { 'len': sampling + 1 }
 
     if len(p0) != len(p1) != 3:
         raise RuntimeError('Only 3D points!', p0, p1)
