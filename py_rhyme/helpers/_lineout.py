@@ -7,7 +7,7 @@ NB: Right now this helper only works on uniform grids
 from math import sqrt
 
 
-def _sample(p0, p1, grid, dx, n_intervals=1024):
+def _sample(p0, p1, grid, dx, n_intervals):
     """
     Parameter
     p0, p1: Normalized position of the ends of the line, e.g. (0.02, 0.76, 0.4)

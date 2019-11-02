@@ -43,10 +43,14 @@ functionalities.
 ```python
 >>> from py_rhyme import PyRhyme
 >>> rhyme = PyRhyme('/path/to/rhyme/output')
+>>> rhyme.ds.jump_to(123)
 >>> p1 = [0, 0.5, 0.5]
 >>> p2 = [1, 0.5, 0.5]
->>> line = rhyme.lineout(p1, p2, 'ntr_frac_0.')
+>>> line = rhyme.lineout(p1, p2, 'ntr_frac_0.', n_intervals=1024)
 >>> # Use your preferred visualising package to plot the line
+>>> import matplotlib.pyplot as plt
+>>> plt.plot(line['x'], line['y'])
+>>> plt.show()
 ```
 
 

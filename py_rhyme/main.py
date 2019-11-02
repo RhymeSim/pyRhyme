@@ -21,43 +21,32 @@ class PyRhyme:
         self.exprs = Expression(self.ds.active()['h5']['attrs']['components'])
 
 
-    def lineout(self, p1, p2, variable):
-        sample = _lineout._sample(p1, p2, self.ds.problem_domain(), self.ds.dx(0))
-
-        dot = self.exprs.dot(variable)
+    def lineout(self, p1, p2, variable, n_intervals=1024):
+        line = _lineout._sample(
+            p1, p2, self.ds.problem_domain(), self.ds.dx(0), n_intervals)
 
         id = self.ds.active_snap
+        dot = self.exprs.dot(variable)
 
-        y = {
-            -1: { 't': 0.0, 'p': [] },
-            0: { 't': 0.0, 'p': [] },
-            1: { 't': 0.0, 'p': [] }
-        }
-
-        if dot < 0 or dot > 2:
+        if dot < 0 or dot > 1:
             raise RuntimeError('Requested time derivative has not implemented!')
 
-        if dot >= 0:
-            y[0]['p'] = self.ds.pick(sample['coords'], self.exprs.id(variable))
-            y[0]['t'] = self.ds.time()
-        elif dot >= 1:
-            self.ds.jump_to(id - 1)
-            y[-1]['p'] = self.ds.pick(sample['coords'], self.exprs.id(variable))
-            y[-1][t] = self.ds.time()
-        elif dot >= 2:
-            self.ds.jump_to(id + 1)
-            y[1]['p'] = self.ds.pick(sample['coords'], self.exprs.id(variable))
-            y[1]['t'] = self.ds.time()
+        y = { x: { 't': 0.0, 'p': [] } for x in [-1, 0, 1] }
 
+        y[0]['p'] = self.ds.pick(line['coords'], self.exprs.id(variable))
+        y[0]['t'] = self.ds.time()
+
+        if dot >= 1:
+            self.ds.jump_to(id - 1)
+            y[-1]['p'] = self.ds.pick(line['coords'], self.exprs.id(variable))
+            y[-1]['t'] = self.ds.time()
+
+        self.ds.jump_to(id)
 
         if dot == 0:
             ys = y[0]['p']
         elif dot == 1:
-            dt = y[0]['t'] - y[1]['t']
+            dt = y[0]['t'] - y[-1]['t']
             ys = [(p - pm1) / dt for p, pm1 in zip(y[0]['p'], y[-1]['p'])]
-        elif dot == 2:
-            dt2 = (y[0]['t'] - y[1]['t'])**2
-            ys = [(pp1 - 2 * p + pm1) / dt2
-                for pp1, p, pm1 in zip(y[1]['p'], y[0]['p'], y[-1]['p'])]
 
-        return { 'x': sample['x'], 'y': ys }
+        return { 'x': line['x'], 'y': ys }

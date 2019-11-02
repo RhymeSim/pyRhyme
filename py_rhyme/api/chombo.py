@@ -1,8 +1,10 @@
 import os, glob, re
 import h5py
 
+from functools import reduce
+
 from .helpers import _chombo
-from .helpers import _row_major
+from .helpers import _column_major
 
 
 class Chombo:
@@ -77,6 +79,28 @@ class Chombo:
         self.active_snap = i
 
 
+    def pick(self, points, variable_id):
+        """
+        points: list of point coordinates
+        variable_id: zero-based variable id
+        """
+        try:
+            iter(points[0])
+        except TypeError:
+            points = [ points ]
+
+        g = self.problem_domain()
+
+        box_len = variable_id * reduce(lambda x, y: x * y, g)
+
+        ids = [
+            box_len + _column_major._indices_to_id(p, g)
+            for p in points
+        ]
+
+        return [self.active()['h5']['levels'][0]['data'][i] for i in ids]
+
+
     def active(self):
         """
         Returns currently active snapshot
@@ -101,14 +125,8 @@ class Chombo:
         return self.active()['h5']['attrs']['time']
 
 
-    def problem_domain(self, include_components=False):
-        pd = self.active()['h5']['attrs']['ProblemDomain']
-
-        if include_components:
-            n = self.num_of_components()
-            return [n] + list(pd)
-        else:
-            return pd
+    def problem_domain(self):
+        return self.active()['h5']['attrs']['ProblemDomain']
 
 
     def dx(self, level):
@@ -116,26 +134,6 @@ class Chombo:
             raise RuntimeError('Out of bound level!', level)
 
         return self.active()['h5']['levels'][level]['dx']
-
-
-    def pick(self, points, variable_id):
-        """
-        points: list of point coordinates
-        variable_id: zero-based variable id
-        """
-        try:
-            iter(points[0])
-        except TypeError:
-            points = [ points ]
-
-        g = self.problem_domain(include_components=True)
-
-        ids = [
-            _row_major._indices_to_id([variable_id] + list(p), g)
-            for p in points
-        ]
-
-        return [self.active()['h5']['levels'][0]['data'][i] for i in ids]
 
 
     def _snapshot_id(self, id):

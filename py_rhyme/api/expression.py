@@ -8,7 +8,6 @@ class Expression:
         for i, v in enumerate(base_variables):
             self.exprs[v] = { 'id': i, 'tag': v, 'dot': 0 }
             self.exprs[v + '.'] = { 'id': i, 'tag': v + '.', 'dot': 1 }
-            self.exprs[v + '..'] = { 'id': i, 'tag': v + '..', 'dot': 2 }
 
 
     def id(self, tag):
