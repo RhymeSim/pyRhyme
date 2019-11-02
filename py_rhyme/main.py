@@ -1,7 +1,8 @@
 import re
 
+from .api import Chombo
+from .api import Expression
 
-from .helpers import _dataset
 from .helpers import _lineout
 
 
@@ -16,108 +17,47 @@ class PyRhyme:
         - opening a dataset
         - loading the specified chombo file
         """
-        self.d = _dataset._open(path)
-
-
-    def _active_id(self):
-        return self.d['state']['active']
-
-
-    def _active_h5(self):
-        h5 = self.d[self._active_id()]
-
-        if not h5['opened']:
-            h5['h5'] = _dataset._open_individual_h5[h5['path']]
-
-        return h5
-
-
-    def _get_h5(self, id):
-        if id < 0 or id > self.d['info']['num_of_files']:
-            raise RuntimeError('Out of range file id!', id)
-
-        h5 = self.d[id]
-
-        if not h5['opened']:
-            h5['h5'] = _dataset._open_individual_h5(h5['path'])
-
-        return h5
-
-
-    def _parse_variable(self, variable):
-        if re.match('[a-zA-Z0-9_]*\.\.$', variable):
-            v = variable[:-2]
-            time_derivative = 2
-        elif re.match('[a-zA-Z0-9_]*\.$', variable):
-            v = variable[:-1]
-            time_derivative = 1
-        else:
-            v = variable
-            time_derivative = 0
-
-        return v, time_derivative
-
-
-    def _variable_id(self, variable):
-        h5 = self._active_h5()['h5']
-
-        if variable in h5['attr']['comp']:
-            return h5['attr']['comp'].index(variable)
-
-        return None
-
-
-    def _coordinate_to_id(self, coord):
-        grid = self._active_h5()['h5']['attr']['ProblemDomain']
-        return coord[0] + coord[1] * grid[1] + coord[2] * grid[1] * grid[2]
-
-
-    def _pick(self, coord, variable):
-        """
-        NB: Only works on single level, single box datasets
-        TODO: Make this AMR compatible
-        """
-        h5 = self._active_h5()['h5']
-
-        v, d = self._parse_variable(variable)
-        i = self._variable_id(v)
-
-        id = self._coordinate_to_id(coord)
-        id += i * h5['levels'][0]['len_data']
-
-        if d == 2:
-            h5m1 = self._get_h5(self._active_id() - 1)['h5']
-            h5p1 = self._get_h5(self._active_id() + 1)['h5']
-            return (
-                h5p1['levels'][0]['data'][id]
-                - 2 * h5['levels'][0]['data'][id]
-                + h5p1['levels'][0]['data'][id]
-            ) / (
-                h5['attr']['time'] - h5m1['attr']['time']
-            )**2
-
-        elif d == 1:
-            h5m1 = self._get_h5(self._active_id() - 1)['h5']
-            return (
-                h5['levels'][0]['data'][id]
-                - h5m1['levels'][0]['data'][id]
-            ) / (
-                h5['attr']['time'] - h5m1['attr']['time']
-            )
-
-        else:
-            return h5['levels'][0]['data'][id]
+        self.ds = Chombo(path)
+        self.exprs = Expression(self.ds.active()['h5']['attrs']['components'])
 
 
     def lineout(self, p1, p2, variable):
-        h5 = self._active_h5()['h5']
+        sample = _lineout._sample(p1, p2, self.ds.problem_domain(), self.ds.dx(0))
 
-        sample = _lineout._sample(
-            p1, p2, h5['attr']['ProblemDomain'], h5['levels'][0]['dx'])
+        dot = self.exprs.dot(variable)
 
-        line = {
-            'x': [sample[i]['dist'] for i in range(sample['len'])],
-            'y': [self._pick(sample[i]['coord'], variable) for i in range(sample['len'])],
+        id = self.ds.active_snap
+
+        y = {
+            -1: { 't': 0.0, 'p': [] },
+            0: { 't': 0.0, 'p': [] },
+            1: { 't': 0.0, 'p': [] }
         }
 
-        return line, sample
+        if dot < 0 or dot > 2:
+            raise RuntimeError('Requested time derivative has not implemented!')
+
+        if dot >= 0:
+            y[0]['p'] = self.ds.pick(sample['coords'], self.exprs.id(variable))
+            y[0]['t'] = self.ds.time()
+        elif dot >= 1:
+            self.ds.jump_to(id - 1)
+            y[-1]['p'] = self.ds.pick(sample['coords'], self.exprs.id(variable))
+            y[-1][t] = self.ds.time()
+        elif dot >= 2:
+            self.ds.jump_to(id + 1)
+            y[1]['p'] = self.ds.pick(sample['coords'], self.exprs.id(variable))
+            y[1]['t'] = self.ds.time()
+
+
+        if dot == 0:
+            ys = y[0]['p']
+        elif dot == 1:
+            dt = y[0]['t'] - y[1]['t']
+            ys = [(p - pm1) / dt for p, pm1 in zip(y[0]['p'], y[-1]['p'])]
+        elif dot == 2:
+            dt2 = (y[0]['t'] - y[1]['t'])**2
+            ys = [(pp1 - 2 * p + pm1) / dt2
+                for pp1, p, pm1 in zip(y[1]['p'], y[0]['p'], y[-1]['p'])]
+
+        return { 'x': sample['x'], 'y': ys }

@@ -32,9 +32,21 @@ $ pip3 install -e . --user
 
 ## Usage
 
-```
-    >>> from py_rhyme import PyRhyme
-    >>> rhyme = PyRhyme('/path/to/rhyme/output')
+### Visit
+You can use the full power of VisIt to analyse Rhyme outputs. For more
+information check [here](py_rhyme/visit/README.md).
+
+### Standard Pakcage
+Import `py_rhyme` into your script and enjoy its powerful analysing
+functionalities.
+
+```python
+>>> from py_rhyme import PyRhyme
+>>> rhyme = PyRhyme('/path/to/rhyme/output')
+>>> p1 = [0, 0.5, 0.5]
+>>> p2 = [1, 0.5, 0.5]
+>>> line = rhyme.lineout(p1, p2, 'ntr_frac_0.')
+>>> # Use your preferred visualising package to plot the line
 ```
 
 
