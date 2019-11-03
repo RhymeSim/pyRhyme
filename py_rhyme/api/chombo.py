@@ -136,6 +136,10 @@ class Chombo:
         return self.active()['h5']['levels'][level]['dx']
 
 
+    def num_of_snapshots(self):
+        return len(self.dataset)
+
+
     def _snapshot_id(self, id):
         len_dataset = len(self.dataset)
 
